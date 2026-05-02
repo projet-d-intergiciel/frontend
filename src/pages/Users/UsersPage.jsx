@@ -1,6 +1,6 @@
 // src/pages/Users/UsersPage.jsx
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Power, RefreshCw, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Power, RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import userService from '../../services/userService';
 import authService from '../../services/authService';
 import UserFormModal from './UserFormModal';
@@ -10,7 +10,11 @@ const UsersPage = () => {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null); // ← Important !
+  const [currentUser, setCurrentUser] = useState(null);
+  
+  // ============ PAGINATION ============
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 3; // Nombre d'utilisateurs par page
 
   // Charger l'utilisateur connecté au montage
   useEffect(() => {
@@ -36,47 +40,93 @@ const UsersPage = () => {
     loadUsers();
   }, []);
 
+  // Réinitialiser à la première page quand la liste change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [users.length]);
+
+  // ============ LOGIQUE PAGINATION ============
+  // Calculer les indices
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(users.length / usersPerPage);
+
+  // Changer de page
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const goToPage = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Générer les numéros de page à afficher
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxPagesToShow = 5; // Nombre maximum de pages à afficher
+    
+    if (totalPages <= maxPagesToShow) {
+      // Afficher toutes les pages
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Afficher avec ellipses
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pageNumbers.push(i);
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) pageNumbers.push(i);
+      } else {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pageNumbers.push(i);
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      }
+    }
+    
+    return pageNumbers;
+  };
+
   // ============ RESTRICTIONS DE SÉCURITÉ ============
   
-  // Vérifier si l'utilisateur peut modifier un autre utilisateur
   const canModifyUser = (user) => {
     if (!currentUser) return false;
-    // Un admin peut modifier les gestionnaires
     if (user.role === 'GESTIONNAIRE') return true;
-    // Un admin NE peut PAS modifier un autre admin
     if (user.role === 'ADMIN' && currentUser.id !== user.id) return false;
-    // On peut modifier son propre profil
     return true;
   };
 
-  // Vérifier si on peut désactiver/activer un utilisateur
   const canToggleStatus = (user) => {
     if (!currentUser) return false;
-    // On ne peut pas se désactiver soi-même
     if (currentUser.id === user.id) return false;
-    // Un admin peut désactiver les gestionnaires
     if (user.role === 'GESTIONNAIRE') return true;
-    // Un admin NE peut PAS désactiver un autre admin
     return false;
   };
 
-  // Vérifier si on peut supprimer un utilisateur
   const canDeleteUser = (user) => {
     if (!currentUser) return false;
-    // Ne pas se supprimer soi-même
     if (currentUser.id === user.id) return false;
-    // Un admin peut supprimer les gestionnaires
     if (user.role === 'GESTIONNAIRE') return true;
-    // Un admin NE peut PAS supprimer un autre admin
     return false;
   };
 
-  // Vérifier si on peut réinitialiser le mot de passe
   const canResetPassword = (user) => {
     if (!currentUser) return false;
-    // Un admin peut réinitialiser les gestionnaires
     if (user.role === 'GESTIONNAIRE') return true;
-    // Un admin peut réinitialiser son propre mot de passe (via la page profil)
     return false;
   };
 
@@ -104,7 +154,6 @@ const UsersPage = () => {
       return;
     }
     
-    // Empêcher de se retirer le rôle ADMIN
     if (currentUser.id === editingUser.id && userData.role !== 'ADMIN') {
       alert('❌ Vous ne pouvez pas changer votre propre rôle d\'administrateur');
       return;
@@ -268,105 +317,167 @@ const UsersPage = () => {
                     Chargement...
                   </td>
                 </tr>
-              ) : users.map((user) => {
-                const isCurrentUser = currentUser?.id === user.id;
-                
-                return (
-                  <tr key={user.id} className="hover:bg-gray-50 transition">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold ${
-                          isCurrentUser ? 'bg-green-600' : 'bg-slate-800'
-                        }`}>
-                          {user.avatar}
+              ) : currentUsers.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                    Aucun utilisateur trouvé
+                  </td>
+                </tr>
+              ) : (
+                currentUsers.map((user) => {
+                  const isCurrentUser = currentUser?.id === user.id;
+                  
+                  return (
+                    <tr key={user.id} className="hover:bg-gray-50 transition">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                            isCurrentUser ? 'bg-green-600' : 'bg-slate-800'
+                          }`}>
+                            {user.avatar}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {user.name}
+                              {isCurrentUser && (
+                                <span className="ml-2 text-xs text-green-600 font-normal">(Vous)</span>
+                              )}
+                            </p>
+                            <p className="text-xs text-gray-500">ID: {user.id}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {user.name}
-                            {isCurrentUser && (
-                              <span className="ml-2 text-xs text-green-600 font-normal">(Vous)</span>
-                            )}
-                          </p>
-                          <p className="text-xs text-gray-500">ID: {user.id}</p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                        {user.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getRoleBadge(user.role)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(user.status)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => openEditModal(user)}
+                            disabled={!canModifyUser(user)}
+                            className={`p-2 rounded-lg transition ${
+                              canModifyUser(user) 
+                                ? 'text-blue-600 hover:bg-blue-50' 
+                                : 'text-gray-300 cursor-not-allowed'
+                            }`}
+                            title="Modifier"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          
+                          <button
+                            onClick={() => handleToggleStatus(user)}
+                            disabled={!canToggleStatus(user)}
+                            className={`p-2 rounded-lg transition ${
+                              canToggleStatus(user)
+                                ? user.status === 'ACTIF' 
+                                  ? 'text-orange-600 hover:bg-orange-50' 
+                                  : 'text-green-600 hover:bg-green-50'
+                                : 'text-gray-300 cursor-not-allowed'
+                            }`}
+                            title={user.status === 'ACTIF' ? 'Désactiver' : 'Activer'}
+                          >
+                            <Power size={18} />
+                          </button>
+                          
+                          <button
+                            onClick={() => handleResetPassword(user)}
+                            disabled={!canResetPassword(user)}
+                            className={`p-2 rounded-lg transition ${
+                              canResetPassword(user) 
+                                ? 'text-purple-600 hover:bg-purple-50' 
+                                : 'text-gray-300 cursor-not-allowed'
+                            }`}
+                            title="Réinitialiser mot de passe"
+                          >
+                            <RefreshCw size={18} />
+                          </button>
+                          
+                          <button
+                            onClick={() => handleDeleteUser(user)}
+                            disabled={!canDeleteUser(user)}
+                            className={`p-2 rounded-lg transition ${
+                              canDeleteUser(user) 
+                                ? 'text-red-600 hover:bg-red-50' 
+                                : 'text-gray-300 cursor-not-allowed'
+                            }`}
+                            title="Supprimer"
+                          >
+                            <Trash2 size={18} />
+                          </button>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                      {user.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getRoleBadge(user.role)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(user.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => openEditModal(user)}
-                          disabled={!canModifyUser(user)}
-                          className={`p-2 rounded-lg transition ${
-                            canModifyUser(user) 
-                              ? 'text-blue-600 hover:bg-blue-50' 
-                              : 'text-gray-300 cursor-not-allowed'
-                          }`}
-                          title="Modifier"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        
-                        <button
-                          onClick={() => handleToggleStatus(user)}
-                          disabled={!canToggleStatus(user)}
-                          className={`p-2 rounded-lg transition ${
-                            canToggleStatus(user)
-                              ? user.status === 'ACTIF' 
-                                ? 'text-orange-600 hover:bg-orange-50' 
-                                : 'text-green-600 hover:bg-green-50'
-                              : 'text-gray-300 cursor-not-allowed'
-                          }`}
-                          title={user.status === 'ACTIF' ? 'Désactiver' : 'Activer'}
-                        >
-                          <Power size={18} />
-                        </button>
-                        
-                        <button
-                          onClick={() => handleResetPassword(user)}
-                          disabled={!canResetPassword(user)}
-                          className={`p-2 rounded-lg transition ${
-                            canResetPassword(user) 
-                              ? 'text-purple-600 hover:bg-purple-50' 
-                              : 'text-gray-300 cursor-not-allowed'
-                          }`}
-                          title="Réinitialiser mot de passe"
-                        >
-                          <RefreshCw size={18} />
-                        </button>
-                        
-                        <button
-                          onClick={() => handleDeleteUser(user)}
-                          disabled={!canDeleteUser(user)}
-                          className={`p-2 rounded-lg transition ${
-                            canDeleteUser(user) 
-                              ? 'text-red-600 hover:bg-red-50' 
-                              : 'text-gray-300 cursor-not-allowed'
-                          }`}
-                          title="Supprimer"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
         
-        {!loading && users.length === 0 && (
-          <div className="px-6 py-8 text-center text-gray-500">
-            Aucun utilisateur trouvé
+        {/* ============ PAGINATION ============ */}
+        {!loading && users.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
+            <div className="text-sm text-gray-500">
+              Affichage de {indexOfFirstUser + 1} à {Math.min(indexOfLastUser, users.length)} sur {users.length} utilisateurs
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* Bouton Précédent */}
+              <button
+                onClick={goToPrevPage}
+                disabled={currentPage === 1}
+                className={`p-2 rounded-lg transition ${
+                  currentPage === 1
+                    ? 'text-gray-300 cursor-not-allowed'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <ChevronLeft size={18} />
+              </button>
+              
+              {/* Numéros de page */}
+              <div className="flex gap-1">
+                {getPageNumbers().map((page, index) => (
+                  page === '...' ? (
+                    <span key={`ellipsis-${index}`} className="px-3 py-1 text-gray-400">
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => goToPage(page)}
+                      className={`px-3 py-1 rounded-lg text-sm transition ${
+                        currentPage === page
+                          ? 'bg-[#0F4C81] text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                ))}
+              </div>
+              
+              {/* Bouton Suivant */}
+              <button
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                className={`p-2 rounded-lg transition ${
+                  currentPage === totalPages
+                    ? 'text-gray-300 cursor-not-allowed'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
           </div>
         )}
       </div>
