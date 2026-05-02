@@ -8,6 +8,8 @@ import StockPage from './pages/Stock/StockPage';
 import UsersPage from './pages/Users/UsersPage';
 import PrivateRoute from './guards/PrivateRoute';
 import RoleGuard from './guards/RoleGuard';
+import ProfilePage from './pages/Profile/ProfilePage';
+import ChangePasswordPage from './pages/Security/ChangePasswordPage';
 
 function App() {
   return (
@@ -22,6 +24,22 @@ function App() {
             <PrivateRoute>
               <Layout>
                 <DashboardPage />
+              </Layout>
+            </PrivateRoute>
+          } />
+
+          <Route path="/profile" element={
+            <PrivateRoute>
+              <Layout>
+                <ProfilePage />
+              </Layout>
+            </PrivateRoute>
+          } />
+
+          <Route path="/change-password" element={
+            <PrivateRoute>
+              <Layout>
+                <ChangePasswordPage />
               </Layout>
             </PrivateRoute>
           } />

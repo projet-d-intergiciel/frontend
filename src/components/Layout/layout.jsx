@@ -1,7 +1,7 @@
 // src/components/layout/Layout.jsx
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, Database, ShoppingCart, Bell, Users, User, LogOut } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { LayoutDashboard, Package, Database, ShoppingCart, Bell, Users, User, LogOut, Key, UserCircle, Settings } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import notificationService from '../../services/notificationService';
 import authService from '../../services/authService';
 
@@ -10,6 +10,8 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [user, setUser] = useState(null);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
   
   // Menu items avec les rôles autorisés
   const allMenuItems = [
@@ -70,6 +72,20 @@ const Layout = ({ children }) => {
     
     return () => {
       window.removeEventListener('new-notification', handleNewNotification);
+    };
+  }, []);
+
+  // Fermer le menu profil quand on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
@@ -139,28 +155,65 @@ const Layout = ({ children }) => {
           ))}
         </nav>
 
-        {/* Profil Utilisateur dynamique en bas de Sidebar avec déconnexion */}
-        <div className="p-4 border-t border-gray-50">
-          <div className="flex items-center gap-3 mb-3">
+        {/* Profil Utilisateur avec menu déroulant */}
+        <div className="p-4 border-t border-gray-50 relative" ref={profileMenuRef}>
+          <button
+            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+            className="w-full flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 transition-all"
+          >
             <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white text-xs font-bold shadow-sm">
               {getInitials(user?.name)}
             </div>
-            <div className="overflow-hidden flex-1">
+            <div className="overflow-hidden flex-1 text-left">
               <p className="text-sm font-bold text-slate-700 truncate">{user?.name || 'Jean Dupont'}</p>
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
                 {getRoleLabel(user?.role)}
               </p>
             </div>
-          </div>
-          
-          {/* Bouton Déconnexion */}
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all mt-2"
-          >
-            <LogOut size={18} />
-            <span className="text-sm font-medium">Déconnexion</span>
+            <div className={`transform transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`}>
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </button>
+
+          {/* Menu déroulant */}
+          {isProfileMenuOpen && (
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden z-50">
+              <div className="py-1">
+                <Link
+                  to="/profile"
+                  onClick={() => setIsProfileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <UserCircle size={16} className="text-gray-400" />
+                  <span>Mon profil</span>
+                </Link>
+                
+                <Link
+                  to="/change-password"
+                  onClick={() => setIsProfileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Key size={16} className="text-gray-400" />
+                  <span>Changer mot de passe</span>
+                </Link>
+                
+                <hr className="my-1 border-gray-100" />
+                
+                <button
+                  onClick={() => {
+                    setIsProfileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut size={16} />
+                  <span>Déconnexion</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -176,6 +229,8 @@ const Layout = ({ children }) => {
             {location.pathname === '/commandes' && 'Commandes'}
             {location.pathname === '/notifications' && 'Notifications'}
             {location.pathname === '/utilisateurs' && 'Utilisateurs'}
+            {location.pathname === '/profile' && 'Mon profil'}
+            {location.pathname === '/change-password' && 'Sécurité'}
           </div>
 
           <div className="flex items-center gap-6">
@@ -192,9 +247,12 @@ const Layout = ({ children }) => {
               )}
             </button>
 
-            {/* Icône Utilisateur */}
+            {/* Icône Utilisateur avec menu (optionnel) */}
             <div className="relative">
-              <button className="flex items-center justify-center">
+              <button 
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                className="flex items-center justify-center"
+              >
                 <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
                   <User size={16} className="text-slate-600" />
                 </div>
