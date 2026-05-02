@@ -67,14 +67,36 @@ function App() {
             </PrivateRoute>
           } />
           
-          {/* Redirection par défaut */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/produits" element={<Navigate to="/stock" replace />} />
-          <Route path="/commandes" element={<Navigate to="/stock" replace />} />
-          <Route path="/notifications" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/commandes" element={<OrderListPage />} />
-            <Route path="/orders/new" element={<NewOrderPage />} />
-            <Route path="/orders/:id" element={<OrderDetailPage />} />
+          
+            <Route path="/commandes" element={
+              <PrivateRoute>
+                <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
+                    <Layout>
+                      <OrderListPage />
+                    </Layout>
+                  </RoleGuard>
+            </PrivateRoute> 
+              } />
+
+            <Route path="/orders/new" element={
+              <PrivateRoute>
+                <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
+                    <Layout>
+                      <NewOrderPage />
+                    </Layout>
+                  </RoleGuard>
+            </PrivateRoute> 
+              } />
+
+            <Route path="/orders/:id" element={
+              <PrivateRoute>
+                <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
+                    <Layout>
+                      <OrderDetailPage />
+                    </Layout>
+                  </RoleGuard>
+            </PrivateRoute> 
+              } />
         </Routes>
       </StockProvider>
     </BrowserRouter>
