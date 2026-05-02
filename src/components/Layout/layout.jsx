@@ -1,28 +1,42 @@
-import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, Database, ShoppingCart, Bell, Users, User } from 'lucide-react';
+// src/components/layout/Layout.jsx
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Package, Database, ShoppingCart, Bell, Users, User, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import notificationService from '../../services/notificationService';
 import authService from '../../services/authService';
 
 const Layout = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [user, setUser] = useState(null);
   
-  const menuItems = [
-    { path: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-    { path: '/produits', icon: <Package size={20} />, label: 'Produits' },
-    { path: '/stock', icon: <Database size={20} />, label: 'Stock' },
-    { path: '/commandes', icon: <ShoppingCart size={20} />, label: 'Commandes' },
-    { path: '/notifications', icon: <Bell size={20} />, label: 'Notifications' },
-    { path: '/utilisateurs', icon: <Users size={20} />, label: 'Utilisateurs' },
+  // Menu items avec les rôles autorisés
+  const allMenuItems = [
+    { path: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard', roles: ['ADMIN', 'GESTIONNAIRE'] },
+    { path: '/produits', icon: <Package size={20} />, label: 'Produits', roles: ['ADMIN', 'GESTIONNAIRE'] },
+    { path: '/stock', icon: <Database size={20} />, label: 'Stock', roles: ['ADMIN', 'GESTIONNAIRE'] },
+    { path: '/commandes', icon: <ShoppingCart size={20} />, label: 'Commandes', roles: ['ADMIN', 'GESTIONNAIRE'] },
+    { path: '/notifications', icon: <Bell size={20} />, label: 'Notifications', roles: ['ADMIN', 'GESTIONNAIRE'] },
+    { path: '/utilisateurs', icon: <Users size={20} />, label: 'Utilisateurs', roles: ['ADMIN'] }, // Réservé ADMIN
   ];
 
   // Récupérer l'utilisateur connecté
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
     setUser(currentUser);
-  }, []);
+    
+    // Rediriger vers login si pas d'utilisateur
+    if (!currentUser) {
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  // Filtrer les menus selon le rôle de l'utilisateur
+  const getFilteredMenuItems = () => {
+    if (!user) return [];
+    return allMenuItems.filter(item => item.roles.includes(user.role));
+  };
 
   // Charger le compteur de notifications non lues
   const loadUnreadCount = async () => {
@@ -36,28 +50,34 @@ const Layout = ({ children }) => {
 
   // Charger le compteur au montage et périodiquement
   useEffect(() => {
-    loadUnreadCount();
-    
-    // Rafraîchir toutes les 30 secondes
-    const interval = setInterval(loadUnreadCount, 30000);
-    
-    return () => clearInterval(interval);
-  }, []);
+    if (user) {
+      loadUnreadCount();
+      
+      // Rafraîchir toutes les 30 secondes
+      const interval = setInterval(loadUnreadCount, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   // Écouter les événements WebSocket pour les nouvelles notifications
   useEffect(() => {
-    // Fonction pour écouter les nouvelles notifications
     const handleNewNotification = () => {
-      loadUnreadCount(); // Recharger le compteur
+      loadUnreadCount();
     };
     
-    // Écouter l'événement personnalisé (si tu as un système d'événements)
     window.addEventListener('new-notification', handleNewNotification);
     
     return () => {
       window.removeEventListener('new-notification', handleNewNotification);
     };
   }, []);
+
+  // Déconnexion
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/login');
+  };
 
   const isActive = (path) => location.pathname === path;
 
@@ -75,6 +95,13 @@ const Layout = ({ children }) => {
       default: return 'Invité';
     }
   };
+
+  // Si pas d'utilisateur, ne pas afficher le layout
+  if (!user) {
+    return null;
+  }
+
+  const menuItems = getFilteredMenuItems();
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans">
@@ -112,17 +139,28 @@ const Layout = ({ children }) => {
           ))}
         </nav>
 
-        {/* Profil Utilisateur dynamique en bas de Sidebar */}
-        <div className="p-4 border-t border-gray-50 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-            {getInitials(user?.name)}
+        {/* Profil Utilisateur dynamique en bas de Sidebar avec déconnexion */}
+        <div className="p-4 border-t border-gray-50">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+              {getInitials(user?.name)}
+            </div>
+            <div className="overflow-hidden flex-1">
+              <p className="text-sm font-bold text-slate-700 truncate">{user?.name || 'Jean Dupont'}</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+                {getRoleLabel(user?.role)}
+              </p>
+            </div>
           </div>
-          <div className="overflow-hidden">
-            <p className="text-sm font-bold text-slate-700 truncate">{user?.name || 'Jean Dupont'}</p>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
-              {getRoleLabel(user?.role)}
-            </p>
-          </div>
+          
+          {/* Bouton Déconnexion */}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all mt-2"
+          >
+            <LogOut size={18} />
+            <span className="text-sm font-medium">Déconnexion</span>
+          </button>
         </div>
       </aside>
 
@@ -144,7 +182,7 @@ const Layout = ({ children }) => {
             {/* Icône Notification avec badge global */}
             <button 
               className="relative"
-              onClick={() => window.location.href = '/notifications'}
+              onClick={() => navigate('/notifications')}
             >
               <Bell size={20} className="text-gray-500 hover:text-gray-700 transition-colors" />
               {unreadCount > 0 && (
