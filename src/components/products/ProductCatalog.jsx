@@ -1,15 +1,18 @@
 import { useState } from "react";
 
 const initialProducts = [
-  { id: 1, nom: "MacBook Pro 14\"", categorie: "Électronique", prixAchat: 185.0, prixVente: 219.0, seuilMin: 5, statut: "ACTIF" },
-  { id: 2, nom: "Clavier Logitech MX", categorie: "Accessoires", prixAchat: 75.0, prixVente: 119.0, seuilMin: 15, statut: "ACTIF" },
-  { id: 3, nom: "Chaise Ergonomique V2", categorie: "Mobilier", prixAchat: 210.0, prixVente: 349.0, seuilMin: 10, statut: "ACTIF" },
-  { id: 4, nom: "Écran Dell UltraSharp 27", categorie: "Électronique", prixAchat: 420.0, prixVente: 599.0, seuilMin: 8, statut: "ACTIF" },
-  { id: 5, nom: "Souris Magic Mouse", categorie: "Accessoires", prixAchat: 55.0, prixVente: 89.0, seuilMin: 20, statut: "ACTIF" },
-  { id: 6, nom: "Bureau Standing Desk", categorie: "Mobilier", prixAchat: 380.0, prixVente: 599.0, seuilMin: 3, statut: "ACTIF" },
+  { id: 1, nom: "MacBook Pro 14\"", categorie: "Électronique", prixAchat: 1082000, prixVente: 1285000, seuilMin: 5, statut: "ACTIF" },
+  { id: 2, nom: "Clavier Logitech MX", categorie: "Accessoires", prixAchat: 43900, prixVente: 69500, seuilMin: 15, statut: "ACTIF" },
+  { id: 3, nom: "Chaise Ergonomique V2", categorie: "Mobilier", prixAchat: 122800, prixVente: 204000, seuilMin: 10, statut: "INACTIF" },
+  { id: 4, nom: "Écran Dell UltraSharp 27", categorie: "Électronique", prixAchat: 245500, prixVente: 350000, seuilMin: 8, statut: "ACTIF" },
+  { id: 5, nom: "Souris Magic Mouse", categorie: "Accessoires", prixAchat: 32150, prixVente: 52000, seuilMin: 20, statut: "ACTIF" },
+  { id: 6, nom: "Bureau Standing Desk", categorie: "Mobilier", prixAchat: 222100, prixVente: 350000, seuilMin: 3, statut: "ACTIF" },
+  { id: 7, nom: "Imprimante HP LaserJet", categorie: "Électronique", prixAchat: 185000, prixVente: 260000, seuilMin: 4, statut: "ACTIF" },
+  { id: 8, nom: "Casque Sony WH-1000XM5", categorie: "Accessoires", prixAchat: 98000, prixVente: 145000, seuilMin: 12, statut: "ACTIF" },
+  { id: 9, nom: "Armoire Rangement Pro", categorie: "Mobilier", prixAchat: 310000, prixVente: 450000, seuilMin: 2, statut: "ACTIF" },
 ];
 
-const categories = ["Toutes les catégories", "Électronique", "Accessoires", "Mobilier", "Agroalimentaire"];
+const categories = ["Toutes les catégories", "Électronique", "Accessoires", "Mobilier"];
 const statuts = ["Tous", "ACTIF", "INACTIF"];
 const unites = ["Pièce (u)", "Kilogramme (kg)", "Litre (l)", "Mètre (m)"];
 const ITEMS_PER_PAGE = 4;
@@ -86,7 +89,7 @@ const Icon = {
     </svg>
   ),
   FormIcon: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" strokeWidth="2">
       <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
       <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
       <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
@@ -97,10 +100,16 @@ const Icon = {
       <polyline points="6 9 12 15 18 9"/>
     </svg>
   ),
+  UserCircle: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+  ),
 };
 
 const fmt = (n) =>
-  Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " FCFA";
+  Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + " FCFA";
 
 export default function App() {
   const [products, setProducts] = useState(initialProducts);
@@ -196,14 +205,14 @@ export default function App() {
     },
     logo: {
       padding: "20px 20px 16px", fontWeight: "700", fontSize: "17px",
-      color: "#1d4ed8", borderBottom: "1px solid #e2e8f0", letterSpacing: "-0.3px",
+      color: "#1a3a6b", borderBottom: "1px solid #e2e8f0", letterSpacing: "-0.3px",
     },
     navItem: (active) => ({
       display: "flex", alignItems: "center", gap: "10px",
       padding: "11px 20px", cursor: "pointer", fontSize: "13.5px",
-      background: active ? "#eff6ff" : "transparent",
-      color: active ? "#2563eb" : "#475569",
-      borderLeft: active ? "3px solid #2563eb" : "3px solid transparent",
+      background: active ? "#eef2ff" : "transparent",
+      color: active ? "#1a3a6b" : "#475569",
+      borderLeft: active ? "3px solid #1a3a6b" : "3px solid transparent",
       fontWeight: active ? "600" : "400",
       transition: "all 0.15s",
     }),
@@ -222,9 +231,9 @@ export default function App() {
     },
     avatar: {
       width: "36px", height: "36px", borderRadius: "50%",
-      background: "#1d4ed8", color: "#fff", display: "flex",
+      background: "#1a3a6b", color: "#fff", display: "flex",
       alignItems: "center", justifyContent: "center",
-      fontWeight: "700", fontSize: "14px",
+      cursor: "pointer",
     },
     content: { padding: "28px", display: "flex", flexDirection: "column", gap: "24px" },
     // Card
@@ -239,7 +248,7 @@ export default function App() {
     cardTitle: { fontSize: "17px", fontWeight: "700", color: "#0f172a" },
     btnPrimary: {
       display: "flex", alignItems: "center", gap: "7px",
-      background: "#2563eb", color: "#fff", border: "none",
+      background: "#1a3a6b", color: "#fff", border: "none",
       borderRadius: "7px", padding: "9px 16px", fontSize: "13.5px",
       fontWeight: "600", cursor: "pointer",
     },
@@ -291,7 +300,7 @@ export default function App() {
       background: "#fee2e2", color: "#dc2626",
     },
     btnEdit: {
-      background: "none", border: "none", color: "#2563eb",
+      background: "none", border: "none", color: "#1a3a6b",
       cursor: "pointer", fontWeight: "600", fontSize: "13.5px",
       display: "flex", alignItems: "center", gap: "5px",
     },
@@ -305,7 +314,7 @@ export default function App() {
     paginBtn: (active) => ({
       width: "32px", height: "32px", borderRadius: "6px",
       border: active ? "none" : "1px solid #e2e8f0",
-      background: active ? "#2563eb" : "#fff",
+      background: active ? "#1a3a6b" : "#fff",
       color: active ? "#fff" : "#475569",
       cursor: "pointer", fontWeight: active ? "700" : "400",
       fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "center",
@@ -383,7 +392,7 @@ export default function App() {
         {/* Topbar */}
         <div style={S.topbar}>
           <div style={S.topbarIcon}><Icon.Bell /></div>
-          <div style={S.avatar}>M</div>
+          <div style={S.avatar}><Icon.UserCircle /></div>
         </div>
 
         {/* Content */}
@@ -514,7 +523,7 @@ export default function App() {
                       value={form.categorie}
                       onChange={(e) => setForm({ ...form, categorie: e.target.value })}>
                       <option value="">Sélectionner...</option>
-                      {["Électronique", "Accessoires", "Mobilier", "Agroalimentaire"].map((c) => (
+                      {["Électronique", "Accessoires", "Mobilier"].map((c) => (
                         <option key={c}>{c}</option>
                       ))}
                     </select>
