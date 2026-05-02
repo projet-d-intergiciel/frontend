@@ -4,6 +4,9 @@ import { StockProvider } from './context/StockContext';
 import Layout from './components/layout/Layout';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import StockPage from './pages/Stock/StockPage';
+import OrderListPage from './pages/orders/OrderListPage';
+import NewOrderPage from './pages/orders/NewOrderPage';
+import OrderDetailPage from './pages/orders/OrderDetailPage';
 import authService from './services/authService';
 
 function App() {
@@ -27,6 +30,9 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/stock" element={<StockPage />} />
+            <Route path="/commandes" element={<OrderListPage />} />
+            <Route path="/orders/new" element={<NewOrderPage />} />
+            <Route path="/orders/:id" element={<OrderDetailPage />} />
           </Routes>
         </Layout>
       </StockProvider>
