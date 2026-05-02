@@ -27,12 +27,12 @@ function App() {
       <StockProvider>
         <Layout>
           <Routes>
-            <route path="/orders" element={<OrderListPage />}/>
-            <route path="/orders/new" element={<NewOrderPage />}/>
-            <route path="/orders/:id" element={<OrderDetailPage />}/>
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/stock" element={<StockPage />} />
+            <route path="/orders" element={<OrderListPage />} />
+            <route path="/orders/new" element={<NewOrderPage />} />
+            <route path="/orders/:id" element={<OrderDetailPage />} />
           </Routes>
         </Layout>
       </StockProvider>
