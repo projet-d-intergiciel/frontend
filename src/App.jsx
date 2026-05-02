@@ -13,6 +13,7 @@ import PrivateRoute from './guards/PrivateRoute';
 import RoleGuard from './guards/RoleGuard';
 import ProfilePage from './pages/Profile/ProfilePage';
 import ChangePasswordPage from './pages/Security/ChangePasswordPage';
+import ProductCatalog from './components/products/ProductCatalog'
 
 function App() {
   return (
@@ -87,12 +88,33 @@ function App() {
                   </RoleGuard>
             </PrivateRoute> 
               } />
-
-            <Route path="/orders/:id" element={
+              
+            <Route path="/orders/new" element={
+              <PrivateRoute>
+                <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
+                    <Layout>
+                      <NewOrderPage />
+                    </Layout>
+                  </RoleGuard>
+            </PrivateRoute> 
+              } />
+            <Route path="/orders/:id"  element={
               <PrivateRoute>
                 <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
                     <Layout>
                       <OrderDetailPage />
+                    </Layout>
+                  </RoleGuard>
+            </PrivateRoute> 
+              } />
+
+              {/* route produits */}
+
+            <Route path="/produits" element={
+              <PrivateRoute>
+                <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
+                    <Layout>
+                      <ProductCatalog />
                     </Layout>
                   </RoleGuard>
             </PrivateRoute> 
