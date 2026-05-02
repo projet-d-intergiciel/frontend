@@ -5,6 +5,9 @@ import Layout from './components/layout/Layout';
 import Login from './pages/Login/Login';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import StockPage from './pages/Stock/StockPage';
+import OrderListPage from './pages/orders/OrderListPage';
+import NewOrderPage from './pages/orders/NewOrderPage';
+import OrderDetailPage from './pages/orders/OrderDetailPage';
 import UsersPage from './pages/Users/UsersPage';
 import PrivateRoute from './guards/PrivateRoute';
 import RoleGuard from './guards/RoleGuard';
@@ -69,6 +72,9 @@ function App() {
           <Route path="/produits" element={<Navigate to="/stock" replace />} />
           <Route path="/commandes" element={<Navigate to="/stock" replace />} />
           <Route path="/notifications" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/commandes" element={<OrderListPage />} />
+            <Route path="/orders/new" element={<NewOrderPage />} />
+            <Route path="/orders/:id" element={<OrderDetailPage />} />
         </Routes>
       </StockProvider>
     </BrowserRouter>
