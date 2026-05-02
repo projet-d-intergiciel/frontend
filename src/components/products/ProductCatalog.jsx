@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const initialProducts = [
   { id: 1, nom: "MacBook Pro 14\"", categorie: "Électronique", prixAchat: 1082000, prixVente: 1285000, seuilMin: 5, statut: "ACTIF" },
@@ -120,7 +120,8 @@ export default function App() {
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
   const [activeNav, setActiveNav] = useState("Produits");
-  const [showForm, setShowForm] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const formRef = useRef(null);
 
   // ── Filtering ────────────────────────────────────────────────────────────
   const filtered = products.filter((p) => {
@@ -142,13 +143,18 @@ export default function App() {
     });
     setEditId(p.id);
     setShowForm(true);
-    window.scrollTo({ top: 9999, behavior: "smooth" });
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
   };
 
   const handleNewProduct = () => {
     setForm(emptyForm);
     setEditId(null);
     setShowForm(true);
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
   };
 
   const handleSubmit = () => {
@@ -175,11 +181,13 @@ export default function App() {
     }
     setForm(emptyForm);
     setEditId(null);
+    setShowForm(false);
   };
 
   const handleCancel = () => {
     setForm(emptyForm);
     setEditId(null);
+    setShowForm(false);
   };
 
   const navItems = [
@@ -500,7 +508,7 @@ export default function App() {
 
           {/* ── Form Card ── */}
           {showForm && (
-            <div style={S.formCard}>
+            <div ref={formRef} style={S.formCard}>
               <div style={S.formHeader}>
                 <Icon.FormIcon />
                 <span style={S.formTitle}>
