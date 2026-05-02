@@ -74,7 +74,7 @@ export default function NewOrderPage() {
         {/* En-tête */}
         <div style={styles.cardHeader}>
           <h2 style={styles.title}>➕ Nouvelle Commande</h2>
-          <button style={styles.btnBack} onClick={() => navigate('/orders')}>← Retour</button>
+          <button style={styles.btnBack} onClick={() => navigate('/commandes')}>← Retour</button>
         </div>
 
         {errors.global && <div style={styles.errorBox}>{errors.global}</div>}
