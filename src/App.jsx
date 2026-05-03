@@ -20,6 +20,7 @@ function App() {
     <BrowserRouter>
       <StockProvider>
         <Routes>
+          <Route path="/" element={<Login />} />
           {/* Page Login (sans Layout) */}
           <Route path="/login" element={<Login />} />
           
