@@ -1,7 +1,7 @@
 // src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { StockProvider } from './context/StockContext';
-import Layout from './components/layout/Layout';
+import Layout from './components/Layout/layout';
 import Login from './pages/Login/Login';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import StockPage from './pages/Stock/StockPage';
