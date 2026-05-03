@@ -13,7 +13,8 @@ import PrivateRoute from './guards/PrivateRoute';
 import RoleGuard from './guards/RoleGuard';
 import ProfilePage from './pages/Profile/ProfilePage';
 import ChangePasswordPage from './pages/Security/ChangePasswordPage';
-import ProductCatalog from './components/products/ProductCatalog'
+import ProductCatalog from './components/products/ProductCatalog';
+import NotificationsPage from './pages/Notifications/NotificationsPage'; // ← AJOUT
 
 function App() {
   return (
@@ -21,105 +22,89 @@ function App() {
       <StockProvider>
         <Routes>
           <Route path="/" element={<Login />} />
-          {/* Page Login (sans Layout) */}
           <Route path="/login" element={<Login />} />
-          
-          {/* Routes protégées avec Layout */}
+
+          {/* Dashboard */}
           <Route path="/dashboard" element={
             <PrivateRoute>
-              <Layout>
-                <DashboardPage />
-              </Layout>
+              <Layout><DashboardPage /></Layout>
             </PrivateRoute>
           } />
 
+          {/* Profil */}
           <Route path="/profile" element={
             <PrivateRoute>
-              <Layout>
-                <ProfilePage />
-              </Layout>
+              <Layout><ProfilePage /></Layout>
             </PrivateRoute>
           } />
 
+          {/* Changer mot de passe */}
           <Route path="/change-password" element={
             <PrivateRoute>
-              <Layout>
-                <ChangePasswordPage />
-              </Layout>
+              <Layout><ChangePasswordPage /></Layout>
             </PrivateRoute>
           } />
-          
+
+          {/* Notifications ← NOUVEAU */}
+          <Route path="/notifications" element={
+            <PrivateRoute>
+              <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
+                <Layout><NotificationsPage /></Layout>
+              </RoleGuard>
+            </PrivateRoute>
+          } />
+
+          {/* Stock */}
           <Route path="/stock" element={
             <PrivateRoute>
               <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
-                <Layout>
-                  <StockPage />
-                </Layout>
+                <Layout><StockPage /></Layout>
               </RoleGuard>
             </PrivateRoute>
           } />
-          
+
+          {/* Utilisateurs */}
           <Route path="/utilisateurs" element={
             <PrivateRoute>
               <RoleGuard allowedRoles={['ADMIN']}>
-                <Layout>
-                  <UsersPage />
-                </Layout>
+                <Layout><UsersPage /></Layout>
               </RoleGuard>
             </PrivateRoute>
           } />
-          
-          
-            <Route path="/commandes" element={
-              <PrivateRoute>
-                <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
-                    <Layout>
-                      <OrderListPage />
-                    </Layout>
-                  </RoleGuard>
-            </PrivateRoute> 
-              } />
 
-            <Route path="/orders/new" element={
-              <PrivateRoute>
-                <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
-                    <Layout>
-                      <NewOrderPage />
-                    </Layout>
-                  </RoleGuard>
-            </PrivateRoute> 
-              } />
-              
-            <Route path="/orders/new" element={
-              <PrivateRoute>
-                <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
-                    <Layout>
-                      <NewOrderPage />
-                    </Layout>
-                  </RoleGuard>
-            </PrivateRoute> 
-              } />
-            <Route path="/orders/:id"  element={
-              <PrivateRoute>
-                <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
-                    <Layout>
-                      <OrderDetailPage />
-                    </Layout>
-                  </RoleGuard>
-            </PrivateRoute> 
-              } />
+          {/* Commandes */}
+          <Route path="/commandes" element={
+            <PrivateRoute>
+              <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
+                <Layout><OrderListPage /></Layout>
+              </RoleGuard>
+            </PrivateRoute>
+          } />
 
-              {/* route produits */}
+          <Route path="/orders/new" element={
+            <PrivateRoute>
+              <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
+                <Layout><NewOrderPage /></Layout>
+              </RoleGuard>
+            </PrivateRoute>
+          } />
 
-            <Route path="/produits" element={
-              <PrivateRoute>
-                <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
-                    <Layout>
-                      <ProductCatalog />
-                    </Layout>
-                  </RoleGuard>
-            </PrivateRoute> 
-              } />
+          <Route path="/orders/:id" element={
+            <PrivateRoute>
+              <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
+                <Layout><OrderDetailPage /></Layout>
+              </RoleGuard>
+            </PrivateRoute>
+          } />
+
+          {/* Produits */}
+          <Route path="/produits" element={
+            <PrivateRoute>
+              <RoleGuard allowedRoles={['ADMIN', 'GESTIONNAIRE']}>
+                <Layout><ProductCatalog /></Layout>
+              </RoleGuard>
+            </PrivateRoute>
+          } />
         </Routes>
       </StockProvider>
     </BrowserRouter>
