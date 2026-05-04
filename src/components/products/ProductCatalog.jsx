@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Plus, Search, Edit2, X, Save, Package, Tag, Ruler, DollarSign, BarChart2, FileText, ChevronLeft, ChevronRight, Loader } from 'lucide-react';
 import productService from '../../services/productService';
-import ConfirmDialog from '../common/ConfirmDialog';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 const CATEGORIES = ['Composants', 'Capteurs', 'Accessoires', 'Électronique', 'Mobilier'];
 const UNITES     = ['Pièce (u)', 'Kilogramme (kg)', 'Litre (l)', 'Mètre (m)'];
