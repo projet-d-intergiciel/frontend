@@ -320,13 +320,19 @@ export default function ProductCatalog() {
                   {formErrors.name && <p style={errTxt}>{formErrors.name}</p>}
                 </div>
                 <div>
-                  <label style={label}>Catégorie</label>
-                  <select style={selectSt(formErrors.category)} value={form.category} onChange={e => setField('category', e.target.value)}>
-                    <option value="">Sélectionner...</option>
-                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                  </select>
-                  {formErrors.category && <p style={errTxt}>{formErrors.category}</p>}
-                </div>
+  <label style={label}>Catégorie</label>
+  <input
+    list="categories-list"
+    style={selectSt(formErrors.category)}
+    value={form.category}
+    onChange={e => setField('category', e.target.value)}
+    placeholder="Sélectionner ou écrire une catégorie..."
+  />
+  <datalist id="categories-list">
+    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+  </datalist>
+  {formErrors.category && <p style={errTxt}>{formErrors.category}</p>}
+</div>
                 <div>
                   <label style={label}>Unité de mesure</label>
                   <select style={selectSt(false)} value={form.uniteMesure} onChange={e => setField('uniteMesure', e.target.value)}>

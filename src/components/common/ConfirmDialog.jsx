@@ -1,4 +1,3 @@
-// src/components/common/ConfirmDialog.jsx
 const ConfirmDialog = ({ isOpen, onClose, onConfirm, title, message }) => {
   if (!isOpen) return null;
 
@@ -8,11 +7,9 @@ const ConfirmDialog = ({ isOpen, onClose, onConfirm, title, message }) => {
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-800">{title}</h2>
         </div>
-        
         <div className="px-6 py-4">
           <p className="text-gray-600">{message}</p>
         </div>
-        
         <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
           <button
             onClick={onClose}
