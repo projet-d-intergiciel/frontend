@@ -1,590 +1,382 @@
-import { useState } from "react";
+// src/components/products/ProductCatalog.jsx
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Search, Edit2, X, Save, Package, Tag, Ruler, DollarSign, BarChart2, FileText, ChevronLeft, ChevronRight, Loader, List } from 'lucide-react';
+import productService from '../../services/productService';
 
-const initialProducts = [
-  { id: 1, nom: "MacBook Pro 14\"", categorie: "Électronique", prixAchat: 1082000, prixVente: 1285000, seuilMin: 5, statut: "ACTIF" },
-  { id: 2, nom: "Clavier Logitech MX", categorie: "Accessoires", prixAchat: 43900, prixVente: 69500, seuilMin: 15, statut: "ACTIF" },
-  { id: 3, nom: "Chaise Ergonomique V2", categorie: "Mobilier", prixAchat: 122800, prixVente: 204000, seuilMin: 10, statut: "INACTIF" },
-  { id: 4, nom: "Écran Dell UltraSharp 27", categorie: "Électronique", prixAchat: 245500, prixVente: 350000, seuilMin: 8, statut: "ACTIF" },
-  { id: 5, nom: "Souris Magic Mouse", categorie: "Accessoires", prixAchat: 32150, prixVente: 52000, seuilMin: 20, statut: "ACTIF" },
-  { id: 6, nom: "Bureau Standing Desk", categorie: "Mobilier", prixAchat: 222100, prixVente: 350000, seuilMin: 3, statut: "ACTIF" },
-  { id: 7, nom: "Imprimante HP LaserJet", categorie: "Électronique", prixAchat: 185000, prixVente: 260000, seuilMin: 4, statut: "ACTIF" },
-  { id: 8, nom: "Casque Sony WH-1000XM5", categorie: "Accessoires", prixAchat: 98000, prixVente: 145000, seuilMin: 12, statut: "ACTIF" },
-  { id: 9, nom: "Armoire Rangement Pro", categorie: "Mobilier", prixAchat: 310000, prixVente: 450000, seuilMin: 2, statut: "ACTIF" },
-];
+// ── Constantes ────────────────────────────────────────────────────────────────
+const CATEGORIES  = ['Composants', 'Capteurs', 'Accessoires', 'Électronique', 'Mobilier'];
+const UNITES      = ['Pièce (u)', 'Kilogramme (kg)', 'Litre (l)', 'Mètre (m)'];
+const STATUTS     = ['Tous', 'OK', 'ALERTE', 'RUPTURE'];
+const ITEMS_PAGE  = 4;
+const EMPTY_FORM  = { name: '', category: '', uniteMesure: 'Pièce (u)', prix: '', seuilMin: '', description: '' };
 
-const categories = ["Toutes les catégories", "Électronique", "Accessoires", "Mobilier"];
-const statuts = ["Tous", "ACTIF", "INACTIF"];
-const unites = ["Pièce (u)", "Kilogramme (kg)", "Litre (l)", "Mètre (m)"];
-const ITEMS_PER_PAGE = 4;
-
-const emptyForm = {
-  nom: "", categorie: "", uniteMesure: "Pièce (u)",
-  prixAchat: "", prixVente: "", seuilMin: "", description: "",
+// ── Badge statut ──────────────────────────────────────────────────────────────
+const Badge = ({ statut }) => {
+  const cfg = {
+    OK:      { bg: '#dcfce7', color: '#16a34a' },
+    ALERTE:  { bg: '#ffedd5', color: '#ea580c' },
+    RUPTURE: { bg: '#fee2e2', color: '#dc2626' },
+    ACTIF:   { bg: '#dcfce7', color: '#16a34a' },
+    INACTIF: { bg: '#fee2e2', color: '#dc2626' },
+  };
+  const s = cfg[statut] || { bg: '#f1f5f9', color: '#64748b' };
+  return (
+    <span style={{ background: s.bg, color: s.color, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, letterSpacing: '0.04em' }}>
+      {statut}
+    </span>
+  );
 };
 
-// ── Icons (inline SVG) ─────────────────────────────────────────────────────
-const Icon = {
-  Dashboard: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-      <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-    </svg>
-  ),
-  Products: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-      <line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
-    </svg>
-  ),
-  Stock: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
-      <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
-      <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-    </svg>
-  ),
-  Cart: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-      <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57l1.65-7.43H6"/>
-    </svg>
-  ),
-  Bell: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-      <path d="M13.73 21a2 2 0 01-3.46 0"/>
-    </svg>
-  ),
-  Users: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/>
-      <path d="M16 3.13a4 4 0 010 7.75"/>
-    </svg>
-  ),
-  Plus: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-    </svg>
-  ),
-  Search: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-    </svg>
-  ),
-  Edit: () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-    </svg>
-  ),
-  ChevLeft: () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <polyline points="15 18 9 12 15 6"/>
-    </svg>
-  ),
-  ChevRight: () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <polyline points="9 18 15 12 9 6"/>
-    </svg>
-  ),
-  FormIcon: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" strokeWidth="2">
-      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
-      <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
-      <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-    </svg>
-  ),
-  ChevDown: () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
-      <polyline points="6 9 12 15 18 9"/>
-    </svg>
-  ),
-  UserCircle: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-      <circle cx="12" cy="7" r="4"/>
-    </svg>
-  ),
+// ── Toast ─────────────────────────────────────────────────────────────────────
+const Toast = ({ toast }) => {
+  if (!toast) return null;
+  return (
+    <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, padding: '12px 20px', borderRadius: 8, fontWeight: 600, fontSize: 13, color: '#fff', background: toast.type === 'error' ? '#ef4444' : '#22c55e', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+      {toast.message}
+    </div>
+  );
 };
 
-const fmt = (n) =>
-  Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + " FCFA";
+// ── Modal Confirmation ────────────────────────────────────────────────────────
+const ConfirmModal = ({ open, onClose, onConfirm, title, message }) => {
+  if (!open) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9998 }}>
+      <div style={{ background: '#fff', borderRadius: 12, width: 420, boxShadow: '0 20px 60px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9' }}>
+          <p style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{title}</p>
+        </div>
+        <div style={{ padding: '16px 24px' }}>
+          <p style={{ fontSize: 13, color: '#64748b' }}>{message}</p>
+        </div>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Non</button>
+          <button onClick={onConfirm} style={{ padding: '8px 18px', borderRadius: 7, border: 'none', background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Oui, supprimer</button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-export default function App() {
-  const [products, setProducts] = useState(initialProducts);
-  const [search, setSearch] = useState("");
-  const [filterCat, setFilterCat] = useState("Toutes les catégories");
-  const [filterStat, setFilterStat] = useState("Tous");
-  const [page, setPage] = useState(1);
-  const [form, setForm] = useState(emptyForm);
-  const [editId, setEditId] = useState(null);
-  const [activeNav, setActiveNav] = useState("Produits");
-  const [showForm, setShowForm] = useState(true);
+// ── Composant principal ───────────────────────────────────────────────────────
+export default function ProductCatalog() {
+  const [products,   setProducts]   = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error,      setError]      = useState(null);
+  const [search,     setSearch]     = useState('');
+  const [filterCat,  setFilterCat]  = useState('Toutes les catégories');
+  const [filterStat, setFilterStat] = useState('Tous');
+  const [page,       setPage]       = useState(1);
+  const [showForm,   setShowForm]   = useState(false);
+  const [editId,     setEditId]     = useState(null);
+  const [form,       setForm]       = useState(EMPTY_FORM);
+  const [formErrors, setFormErrors] = useState({});
+  const [confirm,    setConfirm]    = useState({ open: false, id: null });
+  const [toast,      setToast]      = useState(null);
+  const formRef = useRef(null);
 
-  // ── Filtering ────────────────────────────────────────────────────────────
-  const filtered = products.filter((p) => {
-    const matchSearch = p.nom.toLowerCase().includes(search.toLowerCase());
-    const matchCat = filterCat === "Toutes les catégories" || p.categorie === filterCat;
-    const matchStat = filterStat === "Tous" || p.statut === filterStat;
+  // ── Chargement ───────────────────────────────────────────────────────────────
+  const loadProducts = async () => {
+    try {
+      setLoading(true); setError(null);
+      const data = await productService.getAllProducts();
+      setProducts(data);
+    } catch (err) {
+      setError('Impossible de charger les produits.');
+      console.error(err);
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { loadProducts(); }, []);
+
+  // ── Toast ────────────────────────────────────────────────────────────────────
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  // ── Filtrage ─────────────────────────────────────────────────────────────────
+  const filtered = products.filter(p => {
+    const matchSearch = (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
+                        (p.category || '').toLowerCase().includes(search.toLowerCase());
+    const matchCat  = filterCat  === 'Toutes les catégories' || p.category  === filterCat;
+    const matchStat = filterStat === 'Tous'                  || p.statut    === filterStat;
     return matchSearch && matchCat && matchStat;
   });
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PAGE));
+  const paginated  = filtered.slice((page - 1) * ITEMS_PAGE, page * ITEMS_PAGE);
+  useEffect(() => { setPage(1); }, [search, filterCat, filterStat]);
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
+  // ── Validation ───────────────────────────────────────────────────────────────
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = 'Obligatoire';
+    if (!form.category)    e.category = 'Obligatoire';
+    if (form.prix === '' || isNaN(form.prix) || Number(form.prix) < 0) e.prix = 'Invalide';
+    if (form.seuilMin === '' || isNaN(form.seuilMin) || Number(form.seuilMin) < 0) e.seuilMin = 'Invalide';
+    setFormErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const scrollToForm = () => setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+
+  const handleNew = () => {
+    setForm(EMPTY_FORM); setEditId(null); setFormErrors({});
+    setShowForm(true); scrollToForm();
+  };
+
   const handleEdit = (p) => {
-    setForm({
-      nom: p.nom, categorie: p.categorie, uniteMesure: "Pièce (u)",
-      prixAchat: p.prixAchat, prixVente: p.prixVente,
-      seuilMin: p.seuilMin, description: "",
-    });
-    setEditId(p.id);
-    setShowForm(true);
-    window.scrollTo({ top: 9999, behavior: "smooth" });
+    setForm({ name: p.name || '', category: p.category || '', uniteMesure: p.uniteMesure || 'Pièce (u)', prix: p.prix ?? '', seuilMin: p.seuilMin ?? '', description: p.description || '' });
+    setEditId(p.id); setFormErrors({});
+    setShowForm(true); scrollToForm();
   };
 
-  const handleNewProduct = () => {
-    setForm(emptyForm);
-    setEditId(null);
-    setShowForm(true);
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    setSubmitting(true);
+    try {
+      const payload = { name: form.name.trim(), category: form.category, uniteMesure: form.uniteMesure, prix: parseFloat(form.prix), seuilMin: parseInt(form.seuilMin), description: form.description.trim() };
+      if (editId) { await productService.updateProduct(editId, payload); showToast('Produit mis à jour !'); }
+      else        { await productService.createProduct(payload);         showToast('Produit créé !'); }
+      await loadProducts();
+      setShowForm(false); setForm(EMPTY_FORM); setEditId(null);
+    } catch (err) { showToast('Une erreur est survenue.', 'error'); }
+    finally { setSubmitting(false); }
   };
 
-  const handleSubmit = () => {
-    if (!form.nom.trim()) return;
-    if (editId) {
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === editId
-            ? { ...p, nom: form.nom, categorie: form.categorie,
-                prixAchat: parseFloat(form.prixAchat) || 0,
-                prixVente: parseFloat(form.prixVente) || 0,
-                seuilMin: parseInt(form.seuilMin) || 0 }
-            : p
-        )
-      );
-    } else {
-      setProducts((prev) => [
-        ...prev,
-        { id: Date.now(), nom: form.nom, categorie: form.categorie,
-          prixAchat: parseFloat(form.prixAchat) || 0,
-          prixVente: parseFloat(form.prixVente) || 0,
-          seuilMin: parseInt(form.seuilMin) || 0, statut: "ACTIF" },
-      ]);
-    }
-    setForm(emptyForm);
-    setEditId(null);
+  const handleCancel = () => { setShowForm(false); setForm(EMPTY_FORM); setEditId(null); setFormErrors({}); };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await productService.deleteProduct(confirm.id);
+      await loadProducts();
+      showToast('Produit supprimé !');
+    } catch { showToast('Erreur lors de la suppression.', 'error'); }
+    finally { setConfirm({ open: false, id: null }); }
   };
 
-  const handleCancel = () => {
-    setForm(emptyForm);
-    setEditId(null);
-  };
+  const setField = (k, v) => { setForm(f => ({ ...f, [k]: v })); if (formErrors[k]) setFormErrors(e => ({ ...e, [k]: undefined })); };
 
-  const navItems = [
-    { label: "Dashboard", icon: <Icon.Dashboard /> },
-    { label: "Produits", icon: <Icon.Products /> },
-    { label: "Stock", icon: <Icon.Stock /> },
-    { label: "Commandes", icon: <Icon.Cart /> },
-    { label: "Notifications", icon: <Icon.Bell /> },
-    { label: "Utilisateurs", icon: <Icon.Users /> },
-  ];
-
-  // ── Styles ───────────────────────────────────────────────────────────────
-  const S = {
-    root: {
-      display: "flex", minHeight: "100vh", fontFamily: "'Segoe UI', sans-serif",
-      fontSize: "14px", background: "#f1f5f9", color: "#1e293b",
-    },
-    // Sidebar
-    sidebar: {
-      width: "180px", minWidth: "180px", background: "#fff",
-      borderRight: "1px solid #e2e8f0", display: "flex",
-      flexDirection: "column", padding: "0",
-    },
-    logo: {
-      padding: "20px 20px 16px", fontWeight: "700", fontSize: "17px",
-      color: "#1a3a6b", borderBottom: "1px solid #e2e8f0", letterSpacing: "-0.3px",
-    },
-    navItem: (active) => ({
-      display: "flex", alignItems: "center", gap: "10px",
-      padding: "11px 20px", cursor: "pointer", fontSize: "13.5px",
-      background: active ? "#eef2ff" : "transparent",
-      color: active ? "#1a3a6b" : "#475569",
-      borderLeft: active ? "3px solid #1a3a6b" : "3px solid transparent",
-      fontWeight: active ? "600" : "400",
-      transition: "all 0.15s",
-    }),
-    // Main
-    main: { flex: 1, display: "flex", flexDirection: "column", minWidth: 0 },
-    topbar: {
-      background: "#fff", borderBottom: "1px solid #e2e8f0",
-      padding: "14px 28px", display: "flex", justifyContent: "flex-end",
-      alignItems: "center", gap: "14px",
-    },
-    topbarIcon: {
-      width: "36px", height: "36px", borderRadius: "50%",
-      border: "1px solid #e2e8f0", display: "flex", alignItems: "center",
-      justifyContent: "center", cursor: "pointer", color: "#64748b",
-      background: "#f8fafc",
-    },
-    avatar: {
-      width: "36px", height: "36px", borderRadius: "50%",
-      background: "#1a3a6b", color: "#fff", display: "flex",
-      alignItems: "center", justifyContent: "center",
-      cursor: "pointer",
-    },
-    content: { padding: "28px", display: "flex", flexDirection: "column", gap: "24px" },
-    // Card
-    card: {
-      background: "#fff", borderRadius: "10px",
-      border: "1px solid #e2e8f0", overflow: "hidden",
-    },
-    cardHeader: {
-      padding: "20px 24px 16px", display: "flex",
-      justifyContent: "space-between", alignItems: "center",
-    },
-    cardTitle: { fontSize: "17px", fontWeight: "700", color: "#0f172a" },
-    btnPrimary: {
-      display: "flex", alignItems: "center", gap: "7px",
-      background: "#1a3a6b", color: "#fff", border: "none",
-      borderRadius: "7px", padding: "9px 16px", fontSize: "13.5px",
-      fontWeight: "600", cursor: "pointer",
-    },
-    // Filters
-    filters: {
-      padding: "0 24px 16px", display: "flex", gap: "12px", alignItems: "center",
-    },
-    searchWrap: {
-      flex: 1, position: "relative", display: "flex", alignItems: "center",
-    },
-    searchIcon: {
-      position: "absolute", left: "12px", color: "#94a3b8", pointerEvents: "none",
-    },
-    searchInput: {
-      width: "100%", padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0",
-      borderRadius: "7px", fontSize: "13.5px", outline: "none",
-      background: "#f8fafc", color: "#1e293b", boxSizing: "border-box",
-    },
-    select: {
-      padding: "9px 32px 9px 12px", border: "1px solid #e2e8f0",
-      borderRadius: "7px", fontSize: "13.5px", background: "#f8fafc",
-      color: "#1e293b", cursor: "pointer", outline: "none",
-      appearance: "none", minWidth: "160px",
-    },
-    selectWrap: { position: "relative", display: "inline-block" },
-    selectChev: {
-      position: "absolute", right: "10px", top: "50%",
-      transform: "translateY(-50%)", pointerEvents: "none",
-    },
-    // Table
-    table: { width: "100%", borderCollapse: "collapse" },
-    th: {
-      textAlign: "left", padding: "10px 24px", fontSize: "12.5px",
-      fontWeight: "600", color: "#64748b", borderBottom: "1px solid #e2e8f0",
-      background: "#f8fafc", textTransform: "uppercase", letterSpacing: "0.04em",
-    },
-    td: {
-      padding: "14px 24px", borderBottom: "1px solid #f1f5f9",
-      fontSize: "13.5px", color: "#334155",
-    },
-    badgeActif: {
-      display: "inline-block", padding: "3px 10px", borderRadius: "20px",
-      fontSize: "12px", fontWeight: "600",
-      background: "#dcfce7", color: "#16a34a",
-    },
-    badgeInactif: {
-      display: "inline-block", padding: "3px 10px", borderRadius: "20px",
-      fontSize: "12px", fontWeight: "600",
-      background: "#fee2e2", color: "#dc2626",
-    },
-    btnEdit: {
-      background: "none", border: "none", color: "#1a3a6b",
-      cursor: "pointer", fontWeight: "600", fontSize: "13.5px",
-      display: "flex", alignItems: "center", gap: "5px",
-    },
-    // Pagination
-    pagination: {
-      padding: "14px 24px", display: "flex", justifyContent: "space-between",
-      alignItems: "center", borderTop: "1px solid #f1f5f9",
-    },
-    paginInfo: { fontSize: "13px", color: "#64748b" },
-    paginButtons: { display: "flex", gap: "6px", alignItems: "center" },
-    paginBtn: (active) => ({
-      width: "32px", height: "32px", borderRadius: "6px",
-      border: active ? "none" : "1px solid #e2e8f0",
-      background: active ? "#1a3a6b" : "#fff",
-      color: active ? "#fff" : "#475569",
-      cursor: "pointer", fontWeight: active ? "700" : "400",
-      fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "center",
-    }),
-    // Form
-    formCard: {
-      background: "#fff", borderRadius: "10px",
-      border: "1px solid #e2e8f0", padding: "24px",
-    },
-    formHeader: {
-      display: "flex", alignItems: "center", gap: "10px",
-      marginBottom: "20px", paddingBottom: "16px",
-      borderBottom: "1px solid #f1f5f9",
-    },
-    formTitle: { fontSize: "16px", fontWeight: "700", color: "#0f172a" },
-    formGrid: {
-      display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
-      gap: "16px", marginBottom: "16px",
-    },
-    formGrid2: {
-      display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
-      gap: "16px", marginBottom: "16px",
-    },
-    label: {
-      display: "block", fontSize: "12.5px", fontWeight: "600",
-      color: "#475569", marginBottom: "6px",
-    },
-    input: {
-      width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0",
-      borderRadius: "7px", fontSize: "13.5px", outline: "none",
-      color: "#1e293b", boxSizing: "border-box", background: "#f8fafc",
-    },
-    textarea: {
-      width: "100%", padding: "10px 12px", border: "1px solid #e2e8f0",
-      borderRadius: "7px", fontSize: "13.5px", outline: "none",
-      color: "#1e293b", boxSizing: "border-box", background: "#f8fafc",
-      resize: "vertical", minHeight: "90px", fontFamily: "inherit",
-    },
-    formActions: {
-      display: "flex", justifyContent: "flex-end",
-      gap: "10px", marginTop: "20px", paddingTop: "16px",
-      borderTop: "1px solid #f1f5f9",
-    },
-    btnSecondary: {
-      padding: "9px 20px", border: "1px solid #e2e8f0",
-      borderRadius: "7px", background: "#fff", color: "#475569",
-      fontSize: "13.5px", fontWeight: "600", cursor: "pointer",
-    },
-  };
-
-  const SelectField = ({ value, onChange, options, style }) => (
-    <div style={S.selectWrap}>
-      <select value={value} onChange={onChange} style={{ ...S.select, ...style }}>
-        {options.map((o) => <option key={o}>{o}</option>)}
-      </select>
-      <span style={S.selectChev}><Icon.ChevDown /></span>
-    </div>
-  );
+  // ── Styles partagés ──────────────────────────────────────────────────────────
+  const card = { background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0', overflow: 'hidden' };
+  const inputSt = (err) => ({ width: '100%', padding: '9px 12px', border: `1px solid ${err ? '#f87171' : '#e2e8f0'}`, borderRadius: 7, fontSize: 13.5, outline: 'none', color: '#1e293b', boxSizing: 'border-box', background: '#f8fafc', fontFamily: 'inherit' });
+  const selectSt = (err) => ({ ...inputSt(err), cursor: 'pointer', appearance: 'none' });
+  const label = { display: 'block', fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 5 };
+  const errTxt = { color: '#ef4444', fontSize: 10, marginTop: 3 };
 
   return (
-    <div style={S.root}>
-      {/* ── Sidebar ── */}
-      <aside style={S.sidebar}>
-        <div style={S.logo}>StockManager</div>
-        {navItems.map(({ label, icon }) => (
-          <div key={label} style={S.navItem(activeNav === label)}
-            onClick={() => setActiveNav(label)}>
-            {icon}{label}
-          </div>
-        ))}
-      </aside>
+    <>
+      <Toast toast={toast} />
+      <ConfirmModal
+        open={confirm.open}
+        onClose={() => setConfirm({ open: false, id: null })}
+        onConfirm={handleDeleteConfirm}
+        title="Supprimer le produit"
+        message="Êtes-vous sûr de vouloir supprimer ce produit ? Cette action est irréversible."
+      />
 
-      {/* ── Main ── */}
-      <main style={S.main}>
-        {/* Topbar */}
-        <div style={S.topbar}>
-          <div style={S.topbarIcon}><Icon.Bell /></div>
-          <div style={S.avatar}><Icon.UserCircle /></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+        {/* ── Catalogue produits ── */}
+        <div style={card}>
+
+          {/* Header */}
+          <div style={{ padding: '18px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 17, fontWeight: 700, color: '#0f172a' }}>Catalogue produits</span>
+            <button onClick={handleNew} style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#1a3a6b', color: '#fff', border: 'none', borderRadius: 7, padding: '9px 16px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>
+              <Plus size={15} /> Nouveau produit
+            </button>
+          </div>
+
+          {/* Filtres */}
+          <div style={{ padding: '0 24px 14px', display: 'flex', gap: 12 }}>
+            {/* Recherche */}
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <input
+                style={{ ...inputSt(false), paddingLeft: 36 }}
+                placeholder="Rechercher un produit..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+            {/* Catégorie */}
+            <div style={{ position: 'relative' }}>
+              <select style={{ ...selectSt(false), minWidth: 170, paddingRight: 32 }}
+                value={filterCat} onChange={e => setFilterCat(e.target.value)}>
+                <option>Toutes les catégories</option>
+                {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            {/* Statut */}
+            <div style={{ position: 'relative' }}>
+              <select style={{ ...selectSt(false), minWidth: 130, paddingRight: 32 }}
+                value={`Statut: ${filterStat}`}
+                onChange={e => setFilterStat(e.target.value.replace('Statut: ', ''))}>
+                {STATUTS.map(s => <option key={s}>{`Statut: ${s}`}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Tableau */}
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                {['Nom', 'Catégorie', 'Prix achat', 'Stock', 'Seuil min', 'Statut', 'Actions'].map((h, i) => (
+                  <th key={h} style={{ padding: '10px 24px', fontSize: 12, fontWeight: 600, color: '#64748b', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: i === 6 ? 'right' : 'left' }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={7} style={{ padding: '40px 24px', textAlign: 'center', color: '#94a3b8' }}>
+                  <Loader size={18} style={{ display: 'inline', marginRight: 8 }} /> Chargement...
+                </td></tr>
+              ) : error ? (
+                <tr><td colSpan={7} style={{ padding: '40px 24px', textAlign: 'center', color: '#ef4444', fontSize: 13 }}>
+                  {error} <button onClick={loadProducts} style={{ marginLeft: 8, color: '#1a3a6b', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 12 }}>Réessayer</button>
+                </td></tr>
+              ) : paginated.length === 0 ? (
+                <tr><td colSpan={7} style={{ padding: '40px 24px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Aucun produit trouvé</td></tr>
+              ) : paginated.map((p, i) => (
+                <tr key={p.id} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '14px 24px', fontWeight: 600, color: '#0f172a', fontSize: 13.5 }}>{p.name}</td>
+                  <td style={{ padding: '14px 24px', color: '#475569', fontSize: 13.5 }}>{p.category}</td>
+                  <td style={{ padding: '14px 24px', color: '#334155', fontSize: 13.5 }}>
+                    {Number(p.prix).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} FCFA
+                  </td>
+                  <td style={{ padding: '14px 24px', color: '#334155', fontSize: 13.5 }}>{p.stock ?? '—'}</td>
+                  <td style={{ padding: '14px 24px', color: '#334155', fontSize: 13.5 }}>{p.seuilMin}</td>
+                  <td style={{ padding: '14px 24px' }}><Badge statut={p.statut} /></td>
+                  <td style={{ padding: '14px 24px', textAlign: 'right' }}>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button onClick={() => handleEdit(p)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: '#1a3a6b', cursor: 'pointer', fontWeight: 600, fontSize: 13.5 }}>
+                        <Edit2 size={13} /> Éditer
+                      </button>
+                      <button onClick={() => setConfirm({ open: true, id: p.id })}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                        <X size={13} /> Supprimer
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Pagination */}
+          <div style={{ padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9' }}>
+            <span style={{ fontSize: 13, color: '#64748b' }}>
+              {filtered.length === 0 ? 'Aucun résultat' : (
+                <>Affichage de <b>{(page-1)*ITEMS_PAGE+1}</b> à <b>{Math.min(page*ITEMS_PAGE, filtered.length)}</b> sur <b>{filtered.length}</b> produits</>
+              )}
+            </span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1}
+                style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', color: '#475569', cursor: page===1?'not-allowed':'pointer', opacity: page===1?0.4:1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ChevronLeft size={14} />
+              </button>
+              {Array.from({ length: totalPages }, (_,i) => i+1).map(n => (
+                <button key={n} onClick={() => setPage(n)}
+                  style={{ width: 32, height: 32, borderRadius: 6, border: n===page?'none':'1px solid #e2e8f0', background: n===page?'#1a3a6b':'#fff', color: n===page?'#fff':'#475569', cursor: 'pointer', fontWeight: n===page?700:400, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {n}
+                </button>
+              ))}
+              <button onClick={() => setPage(p => Math.min(totalPages,p+1))} disabled={page===totalPages}
+                style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', color: '#475569', cursor: page===totalPages?'not-allowed':'pointer', opacity: page===totalPages?0.4:1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Content */}
-        <div style={S.content}>
-
-          {/* ── Table Card ── */}
-          <div style={S.card}>
-            {/* Header */}
-            <div style={S.cardHeader}>
-              <span style={S.cardTitle}>Catalogue produits</span>
-              <button style={S.btnPrimary} onClick={handleNewProduct}>
-                <Icon.Plus /> Nouveau produit
+        {/* ── Formulaire ── */}
+        {showForm && (
+          <div ref={formRef} style={{ ...card }}>
+            {/* Header formulaire */}
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <List size={16} color="#1a3a6b" />
+                <span style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>
+                  Formulaire — {editId ? 'Éditer' : 'Ajouter'} un produit
+                </span>
+              </div>
+              <button onClick={handleCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+                <X size={18} />
               </button>
             </div>
 
-            {/* Filters */}
-            <div style={S.filters}>
-              <div style={S.searchWrap}>
-                <span style={S.searchIcon}><Icon.Search /></span>
-                <input
-                  style={S.searchInput}
-                  placeholder="Rechercher un produit..."
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                />
-              </div>
-              <SelectField
-                value={filterCat}
-                onChange={(e) => { setFilterCat(e.target.value); setPage(1); }}
-                options={categories}
-              />
-              <SelectField
-                value={`Statut: ${filterStat}`}
-                onChange={(e) => {
-                  setFilterStat(e.target.value.replace("Statut: ", ""));
-                  setPage(1);
-                }}
-                options={statuts.map((s) => `Statut: ${s}`)}
-              />
-            </div>
-
-            {/* Table */}
-            <table style={S.table}>
-              <thead>
-                <tr>
-                  {["Nom", "Catégorie", "Prix achat", "Prix vente", "Seuil min", "Statut", "Actions"].map((h) => (
-                    <th key={h} style={{ ...S.th, textAlign: h === "Actions" ? "right" : "left" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {paginated.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} style={{ ...S.td, textAlign: "center", color: "#94a3b8", padding: "32px" }}>
-                      Aucun produit trouvé
-                    </td>
-                  </tr>
-                ) : paginated.map((p, i) => (
-                  <tr key={p.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
-                    <td style={{ ...S.td, fontWeight: "500", color: "#0f172a" }}>{p.nom}</td>
-                    <td style={S.td}>{p.categorie}</td>
-                    <td style={S.td}>{fmt(p.prixAchat)}</td>
-                    <td style={S.td}>{fmt(p.prixVente)}</td>
-                    <td style={S.td}>{p.seuilMin}</td>
-                    <td style={S.td}>
-                      <span style={p.statut === "ACTIF" ? S.badgeActif : S.badgeInactif}>
-                        {p.statut}
-                      </span>
-                    </td>
-                    <td style={{ ...S.td, textAlign: "right" }}>
-                      <button style={S.btnEdit} onClick={() => handleEdit(p)}>
-                        <Icon.Edit /> Éditer
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Pagination */}
-            <div style={S.pagination}>
-              <span style={S.paginInfo}>
-                Affichage de {filtered.length === 0 ? 0 : (page - 1) * ITEMS_PER_PAGE + 1} à{" "}
-                {Math.min(page * ITEMS_PER_PAGE, filtered.length)} sur {filtered.length} produits
-              </span>
-              <div style={S.paginButtons}>
-                <button style={S.paginBtn(false)}
-                  disabled={page === 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                  <Icon.ChevLeft />
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-                  <button key={n} style={S.paginBtn(n === page)} onClick={() => setPage(n)}>
-                    {n}
-                  </button>
-                ))}
-                <button style={S.paginBtn(false)}
-                  disabled={page === totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
-                  <Icon.ChevRight />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Form Card ── */}
-          {showForm && (
-            <div style={S.formCard}>
-              <div style={S.formHeader}>
-                <Icon.FormIcon />
-                <span style={S.formTitle}>
-                  Formulaire — {editId ? "Éditer" : "Ajouter"} un produit
-                </span>
-              </div>
-
-              {/* Row 1 */}
-              <div style={S.formGrid}>
+            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {/* Ligne 1 */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
                 <div>
-                  <label style={S.label}>Nom du produit</label>
-                  <input style={S.input} placeholder="ex: MacBook Pro"
-                    value={form.nom}
-                    onChange={(e) => setForm({ ...form, nom: e.target.value })} />
+                  <label style={label}>Nom du produit</label>
+                  <input style={inputSt(formErrors.name)} placeholder="ex: MacBook Pro"
+                    value={form.name} onChange={e => setField('name', e.target.value)} />
+                  {formErrors.name && <p style={errTxt}>{formErrors.name}</p>}
                 </div>
                 <div>
-                  <label style={S.label}>Catégorie</label>
-                  <div style={S.selectWrap}>
-                    <select style={{ ...S.select, width: "100%", minWidth: 0 }}
-                      value={form.categorie}
-                      onChange={(e) => setForm({ ...form, categorie: e.target.value })}>
-                      <option value="">Sélectionner...</option>
-                      {["Électronique", "Accessoires", "Mobilier"].map((c) => (
-                        <option key={c}>{c}</option>
-                      ))}
-                    </select>
-                    <span style={S.selectChev}><Icon.ChevDown /></span>
-                  </div>
+                  <label style={label}>Catégorie</label>
+                  <select style={selectSt(formErrors.category)} value={form.category} onChange={e => setField('category', e.target.value)}>
+                    <option value="">Sélectionner...</option>
+                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                  {formErrors.category && <p style={errTxt}>{formErrors.category}</p>}
                 </div>
                 <div>
-                  <label style={S.label}>Unité de mesure</label>
-                  <div style={S.selectWrap}>
-                    <select style={{ ...S.select, width: "100%", minWidth: 0 }}
-                      value={form.uniteMesure}
-                      onChange={(e) => setForm({ ...form, uniteMesure: e.target.value })}>
-                      {unites.map((u) => <option key={u}>{u}</option>)}
-                    </select>
-                    <span style={S.selectChev}><Icon.ChevDown /></span>
-                  </div>
+                  <label style={label}>Unité de mesure</label>
+                  <select style={selectSt(false)} value={form.uniteMesure} onChange={e => setField('uniteMesure', e.target.value)}>
+                    {UNITES.map(u => <option key={u}>{u}</option>)}
+                  </select>
                 </div>
               </div>
 
-              {/* Row 2 */}
-              <div style={S.formGrid2}>
+              {/* Ligne 2 */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
                 <div>
-                  <label style={S.label}>Prix achat (FCFA)</label>
-                  <input style={S.input} type="number" placeholder="0.00" min="0" step="0.01"
-                    value={form.prixAchat}
-                    onChange={(e) => setForm({ ...form, prixAchat: e.target.value })} />
+                  <label style={label}>Prix achat (FCFA)</label>
+                  <input style={inputSt(formErrors.prix)} type="number" min="0" placeholder="0.00"
+                    value={form.prix} onChange={e => setField('prix', e.target.value)} />
+                  {formErrors.prix && <p style={errTxt}>{formErrors.prix}</p>}
                 </div>
                 <div>
-                  <label style={S.label}>Prix vente (FCFA)</label>
-                  <input style={S.input} type="number" placeholder="0.00" min="0" step="0.01"
-                    value={form.prixVente}
-                    onChange={(e) => setForm({ ...form, prixVente: e.target.value })} />
-                </div>
-                <div>
-                  <label style={S.label}>Seuil minimum</label>
-                  <input style={S.input} type="number" placeholder="0" min="0"
-                    value={form.seuilMin}
-                    onChange={(e) => setForm({ ...form, seuilMin: e.target.value })} />
+                  <label style={label}>Seuil minimum</label>
+                  <input style={inputSt(formErrors.seuilMin)} type="number" min="0" placeholder="0"
+                    value={form.seuilMin} onChange={e => setField('seuilMin', e.target.value)} />
+                  {formErrors.seuilMin && <p style={errTxt}>{formErrors.seuilMin}</p>}
                 </div>
               </div>
 
               {/* Description */}
               <div>
-                <label style={S.label}>Description</label>
-                <textarea style={S.textarea}
+                <label style={label}>Description</label>
+                <textarea style={{ ...inputSt(false), resize: 'vertical', minHeight: 90 }}
                   placeholder="Informations complémentaires sur le produit..."
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                  value={form.description} onChange={e => setField('description', e.target.value)} />
               </div>
 
-              {/* Actions */}
-              <div style={S.formActions}>
-                <button style={S.btnSecondary} onClick={handleCancel}>Annuler</button>
-                <button style={S.btnPrimary} onClick={handleSubmit}>
-                  {editId ? "Mettre à jour" : "Enregistrer le produit"}
+              {/* Boutons */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
+                <button onClick={handleCancel}
+                  style={{ padding: '9px 20px', border: '1px solid #e2e8f0', borderRadius: 7, background: '#fff', color: '#64748b', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>
+                  Annuler
+                </button>
+                <button onClick={handleSubmit} disabled={submitting}
+                  style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 20px', border: 'none', borderRadius: 7, background: '#1a3a6b', color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}>
+                  {submitting
+                    ? <><Loader size={14} /> Enregistrement...</>
+                    : <><Save size={14} /> {editId ? 'Mettre à jour' : 'Enregistrer le produit'}</>
+                  }
                 </button>
               </div>
             </div>
-          )}
-        </div>
-      </main>
-    </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
