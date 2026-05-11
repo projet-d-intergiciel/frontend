@@ -176,8 +176,8 @@ const UsersPage = () => {
       return;
     }
     
-    const action = user.status === 'ACTIF' ? 'désactiver' : 'activer';
-    if (!window.confirm(`Êtes-vous sûr de vouloir ${action} ${user.name} ?`)) return;
+    const action = user.statut === 'ACTIF' ? 'désactiver' : 'activer';
+    if (!window.confirm(`Êtes-vous sûr de vouloir ${action} ${user.nom} ?`)) return;
     
     try {
       await userService.toggleUserStatus(user.id);
@@ -195,7 +195,7 @@ const UsersPage = () => {
       return;
     }
     
-    if (!window.confirm(`Envoyer un nouveau mot de passe temporaire à ${user.name} ?`)) return;
+    if (!window.confirm(`Envoyer un nouveau mot de passe temporaire à ${user.nom} ?`)) return;
     
     try {
       const result = await userService.resetPasswordAndNotify(user.id);
@@ -215,7 +215,7 @@ const UsersPage = () => {
       return;
     }
     
-    if (!window.confirm(`⚠️ Êtes-vous sûr de vouloir supprimer définitivement ${user.name} ?`)) return;
+    if (!window.confirm(`⚠️ Êtes-vous sûr de vouloir supprimer définitivement ${user.nom} ?`)) return;
     
     try {
       await userService.deleteUser(user.id);
@@ -243,10 +243,11 @@ const UsersPage = () => {
 
   // ============ AFFICHAGE ============
 
-  const getStatusBadge = (status) => {
-    return status === 'ACTIF' 
-      ? <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">ACTIF</span>
-      : <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">INACTIF</span>;
+  const getStatusBadge = (statut) => {
+    console.log('Statut reçu du backend:', statut, 'Type:', typeof statut)
+    return statut === 'ACTIF' 
+    ? <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">ACTIF</span>
+    : <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">INACTIF</span>;
   };
 
   const getRoleBadge = (role) => {
@@ -338,7 +339,7 @@ const UsersPage = () => {
                           </div>
                           <div>
                             <p className="font-medium text-gray-900">
-                              {user.name}
+                              {user.nom}
                               {isCurrentUser && (
                                 <span className="ml-2 text-xs text-green-600 font-normal">(Vous)</span>
                               )}
@@ -354,7 +355,7 @@ const UsersPage = () => {
                         {getRoleBadge(user.role)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(user.status)}
+                        {getStatusBadge(user.statut)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <div className="flex justify-end gap-2">
@@ -376,12 +377,12 @@ const UsersPage = () => {
                             disabled={!canToggleStatus(user)}
                             className={`p-2 rounded-lg transition ${
                               canToggleStatus(user)
-                                ? user.status === 'ACTIF' 
+                                ? user.statut === 'ACTIF' 
                                   ? 'text-orange-600 hover:bg-orange-50' 
                                   : 'text-green-600 hover:bg-green-50'
                                 : 'text-gray-300 cursor-not-allowed'
                             }`}
-                            title={user.status === 'ACTIF' ? 'Désactiver' : 'Activer'}
+                            title={user.statut === 'ACTIF' ? 'Désactiver' : 'Activer'}
                           >
                             <Power size={18} />
                           </button>

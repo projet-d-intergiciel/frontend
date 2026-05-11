@@ -1,6 +1,15 @@
 import { LayoutDashboard, Package, Database, ShoppingCart, Bell, Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import authService from '../../services/authService';
 
 export const Sidebar = ({ activePage }) => {
+useEffect(() => {
+    const currentUser = authService.getCurrentUser();
+    console.log('Sidebar - Utilisateur chargé:', currentUser);
+    setUser(currentUser);
+  }, []);
+
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'produits', label: 'Produits', icon: Package },
@@ -36,10 +45,10 @@ export const Sidebar = ({ activePage }) => {
       </nav>
 
       <div className="pt-6 border-t border-gray-100 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white text-xs font-bold">JD</div>
+        <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white text-xs font-bold">{user.avatar || getInitials(user.nom)}</div>
         <div>
-          <p className="text-sm font-bold text-slate-700">Jean Dupont</p>
-          <p className="text-[10px] text-gray-400 font-bold uppercase">Admin</p>
+          <p className="text-sm font-bold text-slate-700">{user.nom}</p>
+          <p className="text-[10px] text-gray-400 font-bold uppercase">{getRoleLabel(user.role)}</p>
         </div>
       </div>
     </aside>

@@ -3,27 +3,27 @@ import { useState, useEffect } from 'react';
 
 const UserFormModal = ({ isOpen, onClose, onSubmit, user = null }) => {
   const [formData, setFormData] = useState({
-    name: '',
+    nom: '',
     email: '',
     role: 'GESTIONNAIRE',
-    status: 'ACTIF'
+    statut: 'ACTIF'
   });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.name || '',
+        nom: user.nom || '',
         email: user.email || '',
         role: user.role || 'GESTIONNAIRE',
-        status: user.status || 'ACTIF'
+        statut: user.statut || 'ACTIF'
       });
     } else {
       setFormData({
         name: '',
         email: '',
         role: 'GESTIONNAIRE',
-        status: 'ACTIF'
+        statut: 'ACTIF'
       });
     }
   }, [user, isOpen]);
@@ -62,8 +62,8 @@ const UserFormModal = ({ isOpen, onClose, onSubmit, user = null }) => {
               <input
                 type="text"
                 required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                value={formData.nom}
+                onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="ex: Jean Dupont"
               />
@@ -103,8 +103,8 @@ const UserFormModal = ({ isOpen, onClose, onSubmit, user = null }) => {
                   Statut
                 </label>
                 <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  value={formData.statut}
+                  onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="ACTIF">Actif</option>
