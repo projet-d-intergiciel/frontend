@@ -1,7 +1,5 @@
 // src/services/userService.js
-import apiClient from '../api/axiosConfig';
-
-const USE_MOCK = true; // À passer à false quand backend prêt
+import { api, USE_MOCK } from './api';
 
 // Données mock initiales
 let MOCK_USERS = [
@@ -71,7 +69,7 @@ const sendEmailCredentials = async (email, name, temporaryPassword) => {
   }
   
   // Version réelle (quand backend sera prêt)
-  const response = await apiClient.post('/auth/send-credentials', { email, name, temporaryPassword });
+  const response = await api.post('/auth/send-credentials', { email, name, temporaryPassword });
   return response.data;
 };
 
@@ -82,7 +80,7 @@ export const userService = {
       await new Promise(resolve => setTimeout(resolve, 500));
       return [...MOCK_USERS];
     }
-    const response = await apiClient.get('/users');
+    const response = await api.get('/users');
     return response.data;
   },
 
@@ -94,7 +92,7 @@ export const userService = {
       if (!user) throw new Error('Utilisateur non trouvé');
       return { ...user };
     }
-    const response = await apiClient.get(`/users/${id}`);
+    const response = await api.get(`/users/${id}`);
     return response.data;
   },
 
@@ -121,7 +119,7 @@ export const userService = {
       return { user: newUser, temporaryPassword };
     }
     
-    const response = await apiClient.post('/users', { ...userData, temporaryPassword });
+    const response = await api.post('/users', { ...userData, temporaryPassword });
     return response.data;
   },
 
@@ -137,7 +135,7 @@ export const userService = {
       return MOCK_USERS[index];
     }
     
-    const response = await apiClient.put(`/users/${id}`, userData);
+    const response = await api.put(`/users/${id}`, userData);
     return response.data;
   },
 
@@ -153,7 +151,7 @@ export const userService = {
       return user;
     }
     
-    const response = await apiClient.patch(`/users/${id}/toggle-status`);
+    const response = await api.patch(`/users/${id}/toggle-status`);
     return response.data;
   },
 
@@ -169,7 +167,7 @@ export const userService = {
       return { success: true };
     }
     
-    const response = await apiClient.delete(`/users/${id}`);
+    const response = await api.delete(`/users/${id}`);
     return response.data;
   },
 
@@ -188,7 +186,7 @@ export const userService = {
       return { success: true, temporaryPassword: newTemporaryPassword };
     }
     
-    const response = await apiClient.post(`/users/${id}/reset-password`);
+    const response = await api.post(`/users/${id}/reset-password`);
     return response.data;
   }
 };

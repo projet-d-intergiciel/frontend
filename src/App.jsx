@@ -21,7 +21,9 @@ function App() {
     <BrowserRouter>
       <StockProvider>
         <Routes>
-          <Route path="/" element={<Login />} />
+          {/* Route racine qui redirige vers login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Page Login (sans Layout) */}
           <Route path="/login" element={<Login />} />
 
           {/* Dashboard */}
