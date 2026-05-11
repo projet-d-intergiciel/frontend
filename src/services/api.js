@@ -5,7 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws';
 
 // Mode développement : utilise les données mock
-const USE_MOCK = true; // Passer à false quand backend prêt
+const USE_MOCK = false; // Passer à false quand backend prêt
 
 const api = axios.create({
   baseURL: API_BASE_URL,

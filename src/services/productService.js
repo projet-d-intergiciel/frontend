@@ -1,6 +1,6 @@
 import { api, USE_MOCK } from './api';
 
-// Données mock
+// Données mock (fallback si backend indisponible)
 let mockProducts = [
   { id: 1, name: 'Batterie Lithium-Ion 12V', description: 'Batterie haute capacité', category: 'Composants', stock: 1240, seuilMin: 200, statut: 'OK', prix: 45.99 },
   { id: 2, name: 'Capteur Ultrason Pro', description: 'Capteur de distance', category: 'Capteurs', stock: 45, seuilMin: 50, statut: 'ALERTE', prix: 32.50 },
@@ -18,6 +18,7 @@ const productService = {
         setTimeout(() => resolve([...mockProducts]), 300);
       });
     }
+    // 🔥 Appel direct au product-service
     const response = await api.get('/products', { params });
     return response.data;
   },
