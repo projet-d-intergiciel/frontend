@@ -20,7 +20,7 @@ const UserFormModal = ({ isOpen, onClose, onSubmit, user = null }) => {
       });
     } else {
       setFormData({
-        name: '',
+        nom: '',
         email: '',
         role: 'GESTIONNAIRE',
         statut: 'ACTIF'
@@ -35,8 +35,21 @@ const UserFormModal = ({ isOpen, onClose, onSubmit, user = null }) => {
       await onSubmit(formData);
       onClose();
     } catch (error) {
-      console.error('Erreur:', error);
-      alert(error.message);
+        console.error("Erreur complète:", error);
+
+   if (error.response) {
+
+      console.log("Status :", error.response.status);
+
+      console.log("Data :", error.response.data);
+
+      alert(error.response.data.message);
+
+   } else {
+
+      alert("Erreur serveur");
+
+   }
     } finally {
       setLoading(false);
     }

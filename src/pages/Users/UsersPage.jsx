@@ -139,7 +139,7 @@ const UsersPage = () => {
       alert(`✅ Utilisateur créé avec succès !\n\nUn email contenant le mot de passe temporaire a été envoyé à ${userData.email}`);
       
       if (result.temporaryPassword) {
-        console.log(`📧 Mot de passe temporaire pour ${userData.email}: ${result.temporaryPassword}`);
+        console.log(` Mot de passe temporaire pour ${userData.email}: ${result.temporaryPassword}`);
       }
     } catch (error) {
       console.error('Erreur création:', error);
@@ -201,7 +201,7 @@ const UsersPage = () => {
       const result = await userService.resetPasswordAndNotify(user.id);
       alert(`✅ Un email avec un nouveau mot de passe temporaire a été envoyé à ${user.email}`);
       if (result.temporaryPassword) {
-        console.log(`📧 Nouveau mot de passe temporaire pour ${user.email}: ${result.temporaryPassword}`);
+        console.log(` Nouveau mot de passe temporaire pour ${user.email}: ${result.temporaryPassword}`);
       }
     } catch (error) {
       console.error('Erreur réinitialisation:', error);
@@ -244,7 +244,6 @@ const UsersPage = () => {
   // ============ AFFICHAGE ============
 
   const getStatusBadge = (statut) => {
-    console.log('Statut reçu du backend:', statut, 'Type:', typeof statut)
     return statut === 'ACTIF' 
     ? <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">ACTIF</span>
     : <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">INACTIF</span>;
