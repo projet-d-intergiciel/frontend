@@ -1,41 +1,168 @@
 // src/services/tokenService.js
+const ACCESS_TOKEN_KEY = 'access_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
+const USER_KEY = 'user';
+const REMEMBER_ME_KEY = 'remember_me';
 
-const STORAGE_KEY = 'auth_token'
-const USER_KEY = 'user'
 
-// Choisis ta stratégie (localStorage persiste, sessionStorage à vie de l'onglet)
-export const saveToken = (token, rememberMe = false) => {
-  const storage = rememberMe ? localStorage : sessionStorage
-  storage.setItem(STORAGE_KEY, token)
-}
+// Choisit le bon storage
+const getStorage = () => {
 
-export const getToken = () => {
-  // D'abord chercher dans localStorage, puis sessionStorage
-  return localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY)
-}
+  const rememberMe =
+    localStorage.getItem(REMEMBER_ME_KEY) === 'true';
 
-export const removeToken = () => {
-  localStorage.removeItem(STORAGE_KEY)
-  sessionStorage.removeItem(STORAGE_KEY)
-}
+  return rememberMe
+    ? localStorage
+    : sessionStorage;
+};
 
-// Pour les infos utilisateur (rôle avant tout)
-export const saveUser = (user) => {
-  const storage = localStorage.getItem(STORAGE_KEY) ? localStorage : sessionStorage
-  storage.setItem(USER_KEY, JSON.stringify(user))
-}
+
+// =========================
+// SAVE TOKENS
+// =========================
+
+export const saveTokens = (
+  accessToken,
+  refreshToken,
+  rememberMe = false
+) => {
+
+  // Nettoyer ancien stockage
+  clearAuth();
+
+  const storage =
+    rememberMe
+      ? localStorage
+      : sessionStorage;
+
+  storage.setItem(
+    ACCESS_TOKEN_KEY,
+    accessToken
+  );
+
+  storage.setItem(
+    REFRESH_TOKEN_KEY,
+    refreshToken
+  );
+
+  if (rememberMe) {
+
+    localStorage.setItem(
+      REMEMBER_ME_KEY,
+      'true'
+    );
+
+  } else {
+
+    localStorage.removeItem(
+      REMEMBER_ME_KEY
+    );
+  }
+};
+
+
+// =========================
+// GET TOKENS
+// =========================
+
+export const getAccessToken = () => {
+
+  return getStorage().getItem(
+    ACCESS_TOKEN_KEY
+  );
+};
+
+export const getRefreshToken = () => {
+
+  return getStorage().getItem(
+    REFRESH_TOKEN_KEY
+  );
+};
+
+
+// =========================
+// REMOVE TOKENS
+// =========================
+
+export const removeTokens = () => {
+
+  localStorage.removeItem(
+    ACCESS_TOKEN_KEY
+  );
+
+  localStorage.removeItem(
+    REFRESH_TOKEN_KEY
+  );
+
+  sessionStorage.removeItem(
+    ACCESS_TOKEN_KEY
+  );
+
+  sessionStorage.removeItem(
+    REFRESH_TOKEN_KEY
+  );
+};
+
+
+// =========================
+// USER
+// =========================
+
+export const saveUser = (
+  user,
+  rememberMe = false
+) => {
+
+  const storage =
+    rememberMe
+      ? localStorage
+      : sessionStorage;
+
+  storage.setItem(
+    USER_KEY,
+    JSON.stringify(user)
+  );
+};
+
 
 export const getUser = () => {
-  const userStr = localStorage.getItem(USER_KEY) || sessionStorage.getItem(USER_KEY)
-  if (!userStr) return null
+
+  const userStr =
+    localStorage.getItem(USER_KEY)
+    || sessionStorage.getItem(USER_KEY);
+
+  if (!userStr) return null;
+
   try {
-    return JSON.parse(userStr)
+
+    return JSON.parse(userStr);
+
   } catch {
-    return null
+
+    return null;
   }
-}
+};
+
 
 export const removeUser = () => {
-  localStorage.removeItem(USER_KEY)
-  sessionStorage.removeItem(USER_KEY)
-}
+
+  localStorage.removeItem(USER_KEY);
+
+  sessionStorage.removeItem(USER_KEY);
+};
+
+
+// =========================
+// CLEAR AUTH
+// =========================
+
+export const clearAuth = () => {
+
+  removeTokens();
+
+  removeUser();
+
+  localStorage.removeItem(
+    REMEMBER_ME_KEY
+  );
+};

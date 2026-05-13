@@ -1,7 +1,15 @@
 // src/services/authService.js
-import apiClient from '../api/axiosConfig';
+import { api, USE_MOCK } from './api';
+import {
+  saveTokens,
+  saveUser,
+  getAccessToken as getStoredAccessToken,
+  getUser,
+  getRefreshToken,
+  clearAuth
+} from './tokenService';
 
-const USE_MOCK = true; // ← Passer à false quand backend prêt
+
 
 // Mocks pour différents rôles (avec mots de passe)
 const MOCK_USERS = {
@@ -43,24 +51,26 @@ const MOCK_USERS = {
 let passwordChanges = {};
 
 // Clés de stockage
-const TOKEN_KEY = 'token';
+const TOKEN_KEY = 'access_token';
 const USER_KEY = 'user';
 const REMEMBER_ME_KEY = 'rememberMe';
 
 // Récupérer le bon storage
 const getStorage = () => {
-  const rememberMe = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
-  return rememberMe ? localStorage : sessionStorage;
+  const rememberMe = localStorage.getItem(REMEMBER_ME_KEY);
+  return rememberMe === 'true' ? localStorage : sessionStorage;
 };
 
 // Sauvegarder dans le storage
 const saveToStorage = (key, value, rememberMe) => {
   const storage = rememberMe ? localStorage : sessionStorage;
+
   storage.setItem(key, value);
+
   if (rememberMe) {
     localStorage.setItem(REMEMBER_ME_KEY, 'true');
   } else {
-    localStorage.removeItem(key);
+    sessionStorage.setItem(REMEMBER_ME_KEY, 'false');
   }
 };
 
@@ -89,11 +99,49 @@ const authService = {
       return { token, user: userInfo };
     }
     
-    const response = await apiClient.post('/auth/login', { email, password });
-    const { token, user } = response.data;
-    saveToStorage(TOKEN_KEY, token, rememberMe);
-    saveToStorage(USER_KEY, JSON.stringify(user), rememberMe);
-    return response.data;
+   try {
+    const response = await api.post('/auth/login', { email, password });
+    console.log('Login response:', response.data);
+    
+   const { accessToken, refreshToken, user } = response.data;
+
+// sécurité
+if (!accessToken) {
+  throw new Error('Access token non reçu du backend');
+}
+clearAuth();
+// stockage
+saveTokens(accessToken, refreshToken, rememberMe);
+saveUser(user, rememberMe);
+
+
+// pour que getStorage() fonctionne correctement
+if (rememberMe) {
+  localStorage.setItem('rememberMe', 'true');
+} else {
+  localStorage.removeItem('rememberMe');
+}
+console.log("FULL RESPONSE:", response);
+console.log("DATA:", response.data);
+
+return {
+  accessToken,
+  refreshToken,
+  user
+};
+  } catch (error) {
+    const status = error.response?.status;
+
+  if (status === 403) {
+    throw new Error("Votre compte a été désactivé. Contactez l'administrateur.");
+  }
+
+  if (status === 401) {
+    throw new Error("Email ou mot de passe incorrect.");
+  }
+
+  throw new Error("Erreur de connexion serveur");
+  }
   },
 
   // Changer le mot de passe
@@ -134,29 +182,28 @@ const authService = {
       return { success: true };
     }
     
-    await apiClient.post('/auth/change-password', { currentPassword, newPassword });
+    await api.post('/auth/change-password', { currentPassword, newPassword });
     return { success: true };
   },
 
   // Récupérer l'utilisateur connecté
   getCurrentUser() {
-    const userStr = getStorage().getItem(USER_KEY);
-    return userStr ? JSON.parse(userStr) : null;
-  },
+  return getUser();
+},
 
   // Définir l'utilisateur connecté
   setCurrentUser(user, rememberMe = false) {
-    saveToStorage(USER_KEY, JSON.stringify(user), rememberMe);
-  },
+  saveUser(user, rememberMe);
+},
 
-  // Récupérer le token
-  getToken() {
-    return getStorage().getItem(TOKEN_KEY);
-  },
+  // Récupérer le access_token
+  getAccessToken() {
+  return getStoredAccessToken();
+},
 
   // Vérifier si connecté
   isAuthenticated() {
-    return !!this.getToken() && !!this.getCurrentUser();
+    return !!this.getAccessToken() && !!this.getCurrentUser();
   },
 
   // Récupérer le rôle
@@ -170,13 +217,60 @@ const authService = {
     return this.getUserRole() === role;
   },
 
+  async refreshAccessToken() {
+
+  try {
+
+    const refreshToken = getRefreshToken();
+
+    if (!refreshToken) {
+      throw new Error("Refresh token absent");
+    }
+
+    const response = await api.post(
+      '/auth/refresh',
+      {
+        refreshToken
+      }
+    );
+
+    const {
+      accessToken,
+      refreshToken: newRefreshToken,
+      user
+    } = response.data;
+
+    // garder rememberMe
+    const rememberMe =
+      localStorage.getItem('remember_me') === 'true';
+
+    saveTokens(
+      accessToken,
+      newRefreshToken,
+      rememberMe
+    );
+
+    saveUser(user, rememberMe);
+
+    return accessToken;
+
+  } catch (error) {
+
+    this.logout();
+
+    throw error;
+  }
+},
+
   // Déconnexion
   logout() {
-    const storage = getStorage();
-    storage.removeItem(TOKEN_KEY);
-    storage.removeItem(USER_KEY);
-    localStorage.removeItem(REMEMBER_ME_KEY);
-  }
+  clearAuth();
+   window.location.href = '/login';
+},
+
+
+
+
 };
 
 export default authService;

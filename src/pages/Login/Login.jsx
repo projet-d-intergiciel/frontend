@@ -14,19 +14,22 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+  e.preventDefault();
+  setError('');
+  setLoading(true);
 
-    try {
-      await authService.login(email, password, rememberMe);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.message || 'Erreur de connexion');
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    await authService.login(
+      email,
+      password,
+      rememberMe );
+    navigate('/dashboard');
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="flex justify-center items-center h-screen bg-slate-50">

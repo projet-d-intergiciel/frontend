@@ -24,15 +24,12 @@ const Layout = ({ children }) => {
   ];
 
   // Récupérer l'utilisateur connecté
-  useEffect(() => {
+ useEffect(() => {
+    //  Récupère l'utilisateur connecté depuis authService
     const currentUser = authService.getCurrentUser();
+    console.log('Utilisateur chargé dans Layout:', currentUser); // ← Débogage
     setUser(currentUser);
-    
-    // Rediriger vers login si pas d'utilisateur
-    if (!currentUser) {
-      navigate('/login');
-    }
-  }, [navigate]);
+  }, []);
 
   // Filtrer les menus selon le rôle de l'utilisateur
   const getFilteredMenuItems = () => {
@@ -162,10 +159,10 @@ const Layout = ({ children }) => {
             className="w-full flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 transition-all"
           >
             <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-              {getInitials(user?.name)}
+              {user.avatar || getInitials(user.nom)}
             </div>
             <div className="overflow-hidden flex-1 text-left">
-              <p className="text-sm font-bold text-slate-700 truncate">{user?.name || 'Jean Dupont'}</p>
+              <p className="text-sm font-bold text-slate-700 truncate">{user ? user.nom: ''}</p>
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
                 {getRoleLabel(user?.role)}
               </p>
