@@ -20,7 +20,6 @@ export default function StockPage() {
   const [movementType, setMovementType] = useState('ENTRÉE');
   const [quantity, setQuantity] = useState('');
   const [motif, setMotif] = useState('');
-  const [seuilMin, setSeuilMin] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   // États de pagination
@@ -116,30 +115,25 @@ export default function StockPage() {
 
     setSubmitting(true);
     const qtyNum = parseInt(quantity);
-    const seuil = seuilMin ? parseInt(seuilMin) : 0;
     
     try {
       let product = products.find(p => p.name.toLowerCase() === productName.toLowerCase());
       let productId;
       
       if (!product) {
-        // Créer le nouveau produit avec le seuil saisi
+        // Créer le nouveau produit sans seuil
         const newProduct = await productService.createProduct({
           name: productName,
           description: '',
           category: 'Général',
           stock: movementType === 'ENTRÉE' ? qtyNum : 0,
-          seuilMin: seuil,
+          seuilMin: 0,
           statut: 'OK'
         });
         productId = newProduct.id;
         product = newProduct;
       } else {
         productId = product.id;
-        // Si le produit existe, mettre à jour le seuil si différent
-        if (seuil > 0 && product.seuilMin !== seuil) {
-          await productService.updateProduct(productId, { ...product, seuilMin: seuil });
-        }
       }
       
       const movementData = {
@@ -162,12 +156,12 @@ export default function StockPage() {
       
       let newStatut = 'OK';
       if (newStock <= 0) newStatut = 'RUPTURE';
-      else if (newStock < (seuil || product.seuilMin || 0)) newStatut = 'ALERTE';
+      else if (newStock < (product.seuilMin || 0)) newStatut = 'ALERTE';
       
-      await productService.updateProduct(productId, { ...product, stock: newStock, statut: newStatut, seuilMin: seuil || product.seuilMin });
+      await productService.updateProduct(productId, { ...product, stock: newStock, statut: newStatut });
       
       const updatedProducts = products.map(p => 
-        p.id === productId ? { ...p, stock: newStock, statut: newStatut, seuilMin: seuil || p.seuilMin } : p
+        p.id === productId ? { ...p, stock: newStock, statut: newStatut } : p
       );
       await alertService.checkAlerts(updatedProducts);
       
@@ -177,7 +171,6 @@ export default function StockPage() {
       setProductName('');
       setQuantity('');
       setMotif('');
-      setSeuilMin('');
       setMovementType('ENTRÉE');
       
       alert('Mouvement enregistré avec succès !');
@@ -194,7 +187,6 @@ export default function StockPage() {
     setMovementType('ENTRÉE');
     setQuantity('');
     setMotif('');
-    setSeuilMin('');
   };
 
   const goToPage = (page) => {
@@ -305,7 +297,6 @@ export default function StockPage() {
                     className="text-[9px] px-2 py-1"
                     onClick={() => {
                       setProductName(p.name);
-                      setSeuilMin(p.seuilMin?.toString() || '');
                     }}
                   >
                     Mouvement
@@ -316,7 +307,7 @@ export default function StockPage() {
           </DataTable>
         </div>
 
-        {/* Formulaire de Mouvement avec champ Seuil */}
+        {/* Formulaire de Mouvement sans champ Seuil */}
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
           <h3 className="font-bold text-slate-700 mb-6 text-sm">Enregistrer un mouvement</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -327,16 +318,7 @@ export default function StockPage() {
                 className="w-full p-2 border border-gray-200 rounded text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500" 
                 placeholder="Nom du produit (nouveau ou existant)"
                 value={productName}
-                onChange={(e) => {
-                  setProductName(e.target.value);
-                  // Réinitialiser le seuil quand le nom change
-                  const existingProduct = products.find(p => p.name.toLowerCase() === e.target.value.toLowerCase());
-                  if (existingProduct) {
-                    setSeuilMin(existingProduct.seuilMin?.toString() || '');
-                  } else {
-                    setSeuilMin('');
-                  }
-                }}
+                onChange={(e) => setProductName(e.target.value)}
                 required
                 list="product-suggestions"
                 disabled={submitting}
@@ -348,21 +330,6 @@ export default function StockPage() {
               </datalist>
               <p className="text-[10px] text-gray-400 mt-1">
                 💡 Saisissez un nouveau produit ou sélectionnez-en un existant
-              </p>
-            </InputGroup>
-
-            <InputGroup label="Seuil minimum d'alerte">
-              <input 
-                type="number"
-                className="w-full p-2 border border-gray-200 rounded text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500" 
-                placeholder="Ex: 10 (alerte si stock < 10)"
-                value={seuilMin}
-                onChange={(e) => setSeuilMin(e.target.value)}
-                min="0"
-                disabled={submitting}
-              />
-              <p className="text-[10px] text-gray-400 mt-1">
-                📊 Seuil à partir duquel une alerte sera déclenchée
               </p>
             </InputGroup>
             
