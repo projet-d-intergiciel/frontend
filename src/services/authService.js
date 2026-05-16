@@ -5,6 +5,7 @@ import {
   saveUser,
   getAccessToken as getStoredAccessToken,
   getUser,
+  getRefreshToken,
   clearAuth
 } from './tokenService';
 
@@ -215,6 +216,51 @@ return {
   hasRole(role) {
     return this.getUserRole() === role;
   },
+
+  async refreshAccessToken() {
+
+  try {
+
+    const refreshToken = getRefreshToken();
+
+    if (!refreshToken) {
+      throw new Error("Refresh token absent");
+    }
+
+    const response = await api.post(
+      '/auth/refresh',
+      {
+        refreshToken
+      }
+    );
+
+    const {
+      accessToken,
+      refreshToken: newRefreshToken,
+      user
+    } = response.data;
+
+    // garder rememberMe
+    const rememberMe =
+      localStorage.getItem('remember_me') === 'true';
+
+    saveTokens(
+      accessToken,
+      newRefreshToken,
+      rememberMe
+    );
+
+    saveUser(user, rememberMe);
+
+    return accessToken;
+
+  } catch (error) {
+
+    this.logout();
+
+    throw error;
+  }
+},
 
   // Déconnexion
   logout() {

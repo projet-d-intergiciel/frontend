@@ -23,7 +23,6 @@ const Login = () => {
       email,
       password,
       rememberMe );
-      console.log("NAVIGATE EXECUTED");
     navigate('/dashboard');
   } catch (err) {
     setError(err.message);
