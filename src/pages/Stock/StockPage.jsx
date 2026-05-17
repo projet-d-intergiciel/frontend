@@ -8,16 +8,22 @@ import { useAlerts } from '../../hooks/useAlerts';
 import movementService from '../../services/movementService';
 import productService from '../../services/productService';
 import alertService from '../../services/alertService';
+import userService from '../../services/userService';
+import authService from '../../services/authService';
 import { formatDate, formatNumber, getStatusBadge } from '../../utils/formatters';
 
 export default function StockPage() {
-  // Utilisation des hooks personnalisés
   const { products, movements, loading, error, refreshAfterMovement } = useStockData();
   const { refreshAlerts } = useAlerts();
+  const [currentUser, setCurrentUser] = useState(null);
+  
+  // Maps pour l'affichage
+  const [productMap, setProductMap] = useState({});
+  const [userMap, setUserMap] = useState({});
   
   // États du formulaire
   const [productName, setProductName] = useState('');
-  const [movementType, setMovementType] = useState('ENTRÉE');
+  const [movementType, setMovementType] = useState('ENTREE');
   const [quantity, setQuantity] = useState('');
   const [motif, setMotif] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -38,21 +44,71 @@ export default function StockPage() {
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Filtrage des mouvements par date ET par type
+  // Récupérer l'utilisateur connecté
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    setCurrentUser(user);
+  }, []);
+
+  // Créer un Map produitId → nomProduit
+  useEffect(() => {
+    if (products.length > 0) {
+      const map = {};
+      products.forEach(p => {
+        map[p.id] = p.name;
+      });
+      setProductMap(map);
+    }
+  }, [products]);
+
+  // Charger les utilisateurs pour afficher les vrais noms
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const users = await userService.getAllUsers();
+        console.log('📋 Utilisateurs reçus:', users);
+        
+        const map = {};
+        // Si users est un tableau
+        if (Array.isArray(users)) {
+          users.forEach(user => {
+            map[user.id] = user.nom;
+          });
+        } 
+        // Si users a une propriété data
+        else if (users && users.data && Array.isArray(users.data)) {
+          users.data.forEach(user => {
+            map[user.id] = user.nom;
+          });
+        }
+        
+        setUserMap(map);
+        console.log('📋 Map utilisateurs créée:', map);
+      } catch (err) {
+        console.error('Erreur chargement utilisateurs:', err);
+        // Fallback avec données mock
+        setUserMap({
+          1: 'Jean Dupont',
+          2: 'Marie Laurent',
+          3: 'Pierre Bernard',
+          4: 'Sophie Comte'
+        });
+      }
+    };
+    loadUsers();
+  }, []);
+
+  // Filtrage des mouvements
   const filteredMovements = movements.filter(m => {
-    // Filtre par date
-    if (startDate && endDate && m.date) {
-      const movementDate = m.date.split('T')[0];
+    if (startDate && endDate && m.dateMouvement) {
+      const movementDate = m.dateMouvement.split('T')[0];
       if (movementDate < startDate || movementDate > endDate) {
         return false;
       }
     }
-    
-    // Filtre par type
-    if (selectedType !== 'TOUS' && m.type !== selectedType) {
+    if (selectedType !== 'TOUS' && m.typeMouvement !== selectedType) {
       return false;
     }
-    
     return true;
   });
 
@@ -63,18 +119,18 @@ export default function StockPage() {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentMovements = filteredMovements.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Statistiques dynamiques
+  // Statistiques
   const totalStock = products.reduce((sum, p) => sum + (p.stock || 0), 0);
   
   const entrees7J = movements
-    .filter(m => m.type === 'ENTRÉE' && m.date?.split('T')[0] >= startDate && m.date?.split('T')[0] <= endDate)
-    .reduce((sum, m) => sum + (m.quantity || 0), 0);
+    .filter(m => m.typeMouvement === 'ENTREE' && m.dateMouvement?.split('T')[0] >= startDate && m.dateMouvement?.split('T')[0] <= endDate)
+    .reduce((sum, m) => sum + (m.quantite || 0), 0);
   
   const sorties7J = movements
-    .filter(m => m.type === 'SORTIE' && m.date?.split('T')[0] >= startDate && m.date?.split('T')[0] <= endDate)
-    .reduce((sum, m) => sum + (m.quantity || 0), 0);
+    .filter(m => m.typeMouvement === 'SORTIE' && m.dateMouvement?.split('T')[0] >= startDate && m.dateMouvement?.split('T')[0] <= endDate)
+    .reduce((sum, m) => sum + (m.quantite || 0), 0);
 
-  // Fonction d'export CSV
+  // Export CSV
   const exportToCSV = () => {
     const headers = ['Produit', 'Stock Disponible', 'Seuil Min', 'Statut'];
     const data = products.map(p => [
@@ -84,23 +140,17 @@ export default function StockPage() {
       p.statut || 'OK'
     ]);
     
-    const csvContent = [
-      headers.join(','),
-      ...data.map(row => row.join(','))
-    ].join('\n');
-    
+    const csvContent = [headers.join(','), ...data.map(row => row.join(','))].join('\n');
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
     link.setAttribute('download', `inventaire_stock_${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
-    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    
     alert('Export CSV effectué avec succès !');
   };
 
@@ -121,12 +171,11 @@ export default function StockPage() {
       let productId;
       
       if (!product) {
-        // Créer le nouveau produit sans seuil
         const newProduct = await productService.createProduct({
           name: productName,
           description: '',
           category: 'Général',
-          stock: movementType === 'ENTRÉE' ? qtyNum : 0,
+          stock: movementType === 'ENTREE' ? qtyNum : 0,
           seuilMin: 0,
           statut: 'OK'
         });
@@ -137,18 +186,17 @@ export default function StockPage() {
       }
       
       const movementData = {
-        productId: productId,
-        productName: productName,
-        type: movementType,
-        quantity: qtyNum,
+        produitId: productId,
+        typeMouvement: movementType,
+        quantite: qtyNum,
         motif: motif,
-        date: new Date().toISOString()
+        utilisateurId: currentUser?.id || 1
       };
       
       await movementService.createMovement(movementData);
       
       let newStock = product.stock || 0;
-      if (movementType === 'ENTRÉE') {
+      if (movementType === 'ENTREE') {
         newStock = (product.stock || 0) + qtyNum;
       } else if (movementType === 'SORTIE') {
         newStock = (product.stock || 0) - qtyNum;
@@ -171,7 +219,7 @@ export default function StockPage() {
       setProductName('');
       setQuantity('');
       setMotif('');
-      setMovementType('ENTRÉE');
+      setMovementType('ENTREE');
       
       alert('Mouvement enregistré avec succès !');
     } catch (err) {
@@ -184,7 +232,7 @@ export default function StockPage() {
 
   const handleReset = () => {
     setProductName('');
-    setMovementType('ENTRÉE');
+    setMovementType('ENTREE');
     setQuantity('');
     setMotif('');
   };
@@ -193,6 +241,27 @@ export default function StockPage() {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
+  };
+
+  const formatTypeDisplay = (type) => {
+    if (type === 'ENTREE') return 'ENTRÉE';
+    if (type === 'SORTIE') return 'SORTIE';
+    return type;
+  };
+
+  const getProductName = (produitId) => {
+    return productMap[produitId] || `Produit ${produitId}`;
+  };
+
+  const getUserName = (utilisateurId) => {
+    const id = Number(utilisateurId);
+    if (userMap[id]) {
+      return userMap[id];
+    }
+    if (userMap[String(id)]) {
+      return userMap[String(id)];
+    }
+    return `Utilisateur ${id}`;
   };
 
   if (loading) {
@@ -295,9 +364,7 @@ export default function StockPage() {
                 <td className="px-6 py-4">
                   <PrimaryButton 
                     className="text-[9px] px-2 py-1"
-                    onClick={() => {
-                      setProductName(p.name);
-                    }}
+                    onClick={() => setProductName(p.name)}
                   >
                     Mouvement
                   </PrimaryButton>
@@ -307,7 +374,7 @@ export default function StockPage() {
           </DataTable>
         </div>
 
-        {/* Formulaire de Mouvement sans champ Seuil */}
+        {/* Formulaire de Mouvement */}
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
           <h3 className="font-bold text-slate-700 mb-6 text-sm">Enregistrer un mouvement</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -324,9 +391,7 @@ export default function StockPage() {
                 disabled={submitting}
               />
               <datalist id="product-suggestions">
-                {products.map(p => (
-                  <option key={p.id} value={p.name} />
-                ))}
+                {products.map(p => (<option key={p.id} value={p.name} />))}
               </datalist>
               <p className="text-[10px] text-gray-400 mt-1">
                 💡 Saisissez un nouveau produit ou sélectionnez-en un existant
@@ -340,8 +405,8 @@ export default function StockPage() {
                 onChange={(e) => setMovementType(e.target.value)}
                 disabled={submitting}
               >
-                <option value="ENTRÉE">ENTRÉE (+) - Ajouter au stock</option>
-                <option value="SORTIE">SORTIE (-) - Retirer du stock</option>
+                <option value="ENTREE">ENTRÉE (+) - Ajouter au stock</option>
+                <option value="SORTIE">SORTIE (-) - Retirer au stock</option>
                 <option value="AJUSTEMENT">AJUSTEMENT - Correction</option>
               </select>
             </InputGroup>
@@ -371,19 +436,10 @@ export default function StockPage() {
             </InputGroup>
 
             <div className="flex gap-2 pt-2">
-              <SecondaryButton 
-                type="button" 
-                className="flex-1" 
-                onClick={handleReset}
-                disabled={submitting}
-              >
+              <SecondaryButton type="button" className="flex-1" onClick={handleReset} disabled={submitting}>
                 Annuler
               </SecondaryButton>
-              <PrimaryButton 
-                type="submit" 
-                className="flex-1"
-                disabled={submitting}
-              >
+              <PrimaryButton type="submit" className="flex-1" disabled={submitting}>
                 {submitting ? 'Enregistrement...' : 'Enregistrer'}
               </PrimaryButton>
             </div>
@@ -397,7 +453,6 @@ export default function StockPage() {
         headers={['Produit', 'Type', 'Quantité', 'Motif', 'Date', 'Auteur']}
         action={
           <div className="flex gap-2">
-            {/* Filtre par type */}
             <select
               value={selectedType}
               onChange={(e) => {
@@ -407,12 +462,11 @@ export default function StockPage() {
               className="px-3 py-1 border rounded text-[10px] font-bold text-gray-500 uppercase tracking-tighter bg-white cursor-pointer hover:bg-gray-50"
             >
               <option value="TOUS">Tous les types</option>
-              <option value="ENTRÉE">ENTRÉE</option>
+              <option value="ENTREE">ENTRÉE</option>
               <option value="SORTIE">SORTIE</option>
               <option value="AJUSTEMENT">AJUSTEMENT</option>
             </select>
             
-            {/* Sélecteur de dates */}
             <div className="relative">
               <button 
                 className="px-3 py-1 border rounded text-[10px] font-bold text-gray-500 uppercase tracking-tighter flex items-center gap-1 hover:bg-gray-50"
@@ -431,10 +485,7 @@ export default function StockPage() {
                         type="date" 
                         className="w-full p-2 border rounded text-sm"
                         value={startDate || ''}
-                        onChange={(e) => {
-                          setStartDate(e.target.value);
-                          setCurrentPage(1);
-                        }}
+                        onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
                       />
                     </div>
                     <div>
@@ -443,21 +494,13 @@ export default function StockPage() {
                         type="date" 
                         className="w-full p-2 border rounded text-sm"
                         value={endDate || ''}
-                        onChange={(e) => {
-                          setEndDate(e.target.value);
-                          setCurrentPage(1);
-                        }}
+                        onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
                       />
                     </div>
                     <div className="flex gap-2">
                       <button 
                         className="flex-1 bg-gray-200 text-gray-700 text-xs py-2 rounded hover:bg-gray-300"
-                        onClick={() => {
-                          setStartDate('');
-                          setEndDate('');
-                          setShowDatePicker(false);
-                          setCurrentPage(1);
-                        }}
+                        onClick={() => { setStartDate(''); setEndDate(''); setShowDatePicker(false); setCurrentPage(1); }}
                       >
                         Réinitialiser
                       </button>
@@ -477,18 +520,26 @@ export default function StockPage() {
       >
         {currentMovements.map((m) => (
           <tr key={m.id} className="hover:bg-gray-50 transition-colors">
-            <td className="px-6 py-4 font-medium text-slate-700">{m.productName}</td>
+            <td className="px-6 py-4 font-medium text-slate-700">
+              {getProductName(m.produitId)}
+            </td>
             <td className="px-6 py-4">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(m.type)}`}>
-                {m.type}
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                m.typeMouvement === 'ENTREE' ? 'bg-green-100 text-green-700' :
+                m.typeMouvement === 'SORTIE' ? 'bg-red-100 text-red-700' :
+                'bg-blue-100 text-blue-700'
+              }`}>
+                {formatTypeDisplay(m.typeMouvement)}
               </span>
             </td>
-            <td className={`px-6 py-4 font-bold ${m.type === 'ENTRÉE' ? 'text-green-600' : 'text-red-600'}`}>
-              {m.type === 'ENTRÉE' ? '+' : '-'}{m.quantity}
+            <td className={`px-6 py-4 font-bold ${m.typeMouvement === 'ENTREE' ? 'text-green-600' : 'text-red-600'}`}>
+              {m.typeMouvement === 'ENTREE' ? '+' : '-'}{m.quantite}
             </td>
             <td className="px-6 py-4 text-gray-500 text-sm">{m.motif}</td>
-            <td className="px-6 py-4 text-gray-500 text-sm">{formatDate(m.date, 'datetime')}</td>
-            <td className="px-6 py-4 font-medium text-slate-600">{m.author || 'Jean Dupont'}</td>
+            <td className="px-6 py-4 text-gray-500 text-sm">{formatDate(m.dateMouvement, 'datetime')}</td>
+            <td className="px-6 py-4 font-medium text-slate-600">
+              {getUserName(m.utilisateurId)}
+            </td>
           </tr>
         ))}
       </DataTable>
@@ -496,9 +547,7 @@ export default function StockPage() {
       {/* Pagination */}
       {totalPages > 0 && (
         <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-          <p>
-            Affichage de {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, totalMovements)} sur {totalMovements} mouvements
-          </p>
+          <p>Affichage de {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, totalMovements)} sur {totalMovements} mouvements</p>
           <div className="flex gap-1">
             <button 
               className={`w-6 h-6 border rounded flex items-center justify-center ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
@@ -519,15 +568,10 @@ export default function StockPage() {
               } else {
                 pageNum = currentPage - 2 + index;
               }
-              
               return (
                 <button 
                   key={index}
-                  className={`w-6 h-6 border rounded flex items-center justify-center ${
-                    currentPage === pageNum 
-                      ? 'bg-[#0F4C81] text-white' 
-                      : 'hover:bg-gray-50'
-                  }`}
+                  className={`w-6 h-6 border rounded flex items-center justify-center ${currentPage === pageNum ? 'bg-[#0F4C81] text-white' : 'hover:bg-gray-50'}`}
                   onClick={() => goToPage(pageNum)}
                 >
                   {pageNum}
