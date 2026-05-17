@@ -1,7 +1,7 @@
 import { api, USE_MOCK } from './api';
 
 let mockMovements = [
-    { id: 1, productId: 1, productName: 'Batterie Lithium-Ion 12V', type: 'ENTRÉE', quantity: 200, motif: 'Réapprovisionnement fournisseur', date: new Date().toISOString(), author: 'Jean Dupont' },
+    { id: 1, productId: 1, productName: 'Batterie Lithium-Ion 12V', type: 'ENTREE', quantity: 200, motif: 'Réapprovisionnement fournisseur', date: new Date().toISOString(), author: 'Jean Dupont' },
     { id: 2, productId: 2, productName: 'Capteur Ultrason Pro', type: 'SORTIE', quantity: 15, motif: 'Projet R&D Beta', date: new Date().toISOString(), author: 'Marie Claire' },
 ];
 
@@ -46,15 +46,20 @@ const movementService = {
                 setTimeout(() => resolve(newMovement), 300);
             });
         }
-        // 🔥 Appel réel au backend
+        
+        // ✅ CORRECTION : Utiliser EXACTEMENT les noms attendus par le backend
         const payload = {
-            produitId: movementData.productId,
-            typeMouvement: movementData.type,
-            quantite: movementData.quantity,
+            produitId: movementData.produitId,      // ← "produitId" (pas "productId")
+            typeMouvement: movementData.typeMouvement, // ← "typeMouvement" (pas "type")
+            quantite: movementData.quantite,        // ← "quantite" (pas "quantity")
             motif: movementData.motif,
-            utilisateurId: 1
+            utilisateurId: movementData.utilisateurId || 1
         };
+        
+        console.log('📤 Envoi au backend:', payload); // Debug
+        
         const response = await api.post('/stock/movements', payload);
+        
         return {
             ...response.data.data,
             productName: movementData.productName,
