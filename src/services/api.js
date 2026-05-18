@@ -97,7 +97,7 @@ api.interceptors.response.use(
         saveTokens(
           accessToken,
           newRefreshToken || refreshToken,
-          localStorage.getItem('remember_me') === 'true'
+          localStorage.getItem('rememberMe') === 'true'
         );
 
         // remettre nouveau token dans requête

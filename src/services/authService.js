@@ -109,7 +109,7 @@ const authService = {
 if (!accessToken) {
   throw new Error('Access token non reçu du backend');
 }
-clearAuth();
+// clearAuth();
 // stockage
 saveTokens(accessToken, refreshToken, rememberMe);
 saveUser(user, rememberMe);
@@ -182,7 +182,8 @@ return {
       return { success: true };
     }
     
-    await api.post('/auth/change-password', { currentPassword, newPassword });
+    await api.post('/auth/change-password', {  ancienMotDePasse: currentPassword,
+  nouveauMotDePasse: newPassword });
     return { success: true };
   },
 
@@ -242,7 +243,7 @@ return {
 
     // garder rememberMe
     const rememberMe =
-      localStorage.getItem('remember_me') === 'true';
+      localStorage.getItem('rememberMe') === 'true';
 
     saveTokens(
       accessToken,
