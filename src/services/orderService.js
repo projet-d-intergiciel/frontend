@@ -1,46 +1,100 @@
-import axios from 'axios';
+// orderService.js
+import { api, USE_MOCK } from './api';  // ← Même import que productService
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8083';
-
-const api = axios.create({
-  baseURL: `${API_BASE}/api/orders`,
-});
-
-// Injection automatique du token JWT
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-// Gestion globale des erreurs
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
+// Données mock (optionnel)
+let mockOrders = [];
 
 export const orderService = {
-  // Créer une commande (BROUILLON)
-  creer: (data) => api.post('/', data).then((r) => r.data),
+  // Créer une commande
+  creer: async (data) => {
+    if (USE_MOCK) {
+      return new Promise((resolve) => {
+        const newOrder = {
+          id: Date.now(),
+          ...data,
+          status: 'BROUILLON',
+          createdAt: new Date().toISOString()
+        };
+        mockOrders.push(newOrder);
+        setTimeout(() => resolve(newOrder), 300);
+      });
+    }
+    const response = await api.post('/orders', data);
+    return response.data;
+  },
 
-  // Lister avec filtres
-  lister: (params) => api.get('/', { params }).then((r) => r.data),
+  // Lister les commandes
+  lister: async (params = {}) => {
+    if (USE_MOCK) {
+      return new Promise((resolve) => {
+        setTimeout(() => resolve({
+          content: mockOrders,
+          totalElements: mockOrders.length,
+          totalPages: 1,
+          size: params.size || 10,
+          number: params.page || 0
+        }), 300);
+      });
+    }
+    const response = await api.get('/orders', { params });
+    return response.data;
+  },
 
-  // Détail
-  getById: (id) => api.get(`/${id}`).then((r) => r.data),
+  // Détail d'une commande
+  getById: async (id) => {
+    if (USE_MOCK) {
+      return new Promise((resolve, reject) => {
+        const order = mockOrders.find(o => o.id === id);
+        setTimeout(() => {
+          if (order) resolve(order);
+          else reject(new Error('Commande non trouvée'));
+        }, 200);
+      });
+    }
+    const response = await api.get(`/orders/${id}`);
+    return response.data;
+  },
 
-  // Transitions de statut
-  valider: (id) => api.patch(`/${id}/valider`).then((r) => r.data),
-  recevoir: (id) => api.patch(`/${id}/recevoir`).then((r) => r.data),
-  expedier: (id) => api.patch(`/${id}/expedier`).then((r) => r.data),
-  cloturer: (id) => api.patch(`/${id}/cloturer`).then((r) => r.data),
-  annuler: (id) => api.patch(`/${id}/annuler`).then((r) => r.data),
+  // Valider une commande
+  valider: async (id) => {
+    if (USE_MOCK) {
+      return new Promise((resolve, reject) => {
+        const order = mockOrders.find(o => o.id === id);
+        if (order) {
+          order.status = 'VALIDEE';
+          setTimeout(() => resolve(order), 200);
+        } else {
+          reject(new Error('Commande non trouvée'));
+        }
+      });
+    }
+    const response = await api.patch(`/orders/${id}/valider`);
+    return response.data;
+  },
+
+  // Recevoir une commande
+  recevoir: async (id) => {
+    const response = await api.patch(`/orders/${id}/recevoir`);
+    return response.data;
+  },
+
+  // Expédier une commande
+  expedier: async (id) => {
+    const response = await api.patch(`/orders/${id}/expedier`);
+    return response.data;
+  },
+
+  // Clôturer une commande
+  cloturer: async (id) => {
+    const response = await api.patch(`/orders/${id}/cloturer`);
+    return response.data;
+  },
+
+  // Annuler une commande
+  annuler: async (id) => {
+    const response = await api.patch(`/orders/${id}/annuler`);
+    return response.data;
+  }
 };
 
 export default orderService;
