@@ -27,7 +27,6 @@ const Layout = ({ children }) => {
  useEffect(() => {
     //  Récupère l'utilisateur connecté depuis authService
     const currentUser = authService.getCurrentUser();
-    console.log('Utilisateur chargé dans Layout:', currentUser); // ← Débogage
     setUser(currentUser);
   }, []);
 
@@ -89,7 +88,6 @@ const Layout = ({ children }) => {
   // Déconnexion
   const handleLogout = () => {
     authService.logout();
-    navigate('/login');
   };
 
   const isActive = (path) => location.pathname === path;

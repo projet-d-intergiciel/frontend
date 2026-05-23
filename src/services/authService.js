@@ -101,46 +101,48 @@ const authService = {
     
    try {
     const response = await api.post('/auth/login', { email, password });
-    console.log('Login response:', response.data);
+    
     
    const { accessToken, refreshToken, user } = response.data;
 
-// sécurité
-if (!accessToken) {
-  throw new Error('Access token non reçu du backend');
-}
-// clearAuth();
-// stockage
-saveTokens(accessToken, refreshToken, rememberMe);
-saveUser(user, rememberMe);
+    // sécurité
+    if (!accessToken) {
+      throw new Error('Access token non reçu du backend');
+    }
+    clearAuth();
+    // stockage
+    saveTokens(accessToken, refreshToken, rememberMe);
+    saveUser(user, rememberMe);
 
-
-// pour que getStorage() fonctionne correctement
-if (rememberMe) {
-  localStorage.setItem('rememberMe', 'true');
-} else {
-  localStorage.removeItem('rememberMe');
-}
-console.log("FULL RESPONSE:", response);
-console.log("DATA:", response.data);
-
-return {
-  accessToken,
-  refreshToken,
-  user
-};
+    
+    
+    // pour que getStorage() fonctionne correctement
+    if (rememberMe) {
+      localStorage.setItem('rememberMe', 'true');
+    } else {
+      localStorage.removeItem('rememberMe');
+    }
+    
+    if (user.mustChangePassword) {
+       window.location.href ='/change-password';
+       return;
+    }
+    return {
+      accessToken,
+      refreshToken,
+      user
+    };
   } catch (error) {
-    const status = error.response?.status;
+    const message =
+    error.response?.data?.message;
 
-  if (status === 403) {
-    throw new Error("Votre compte a été désactivé. Contactez l'administrateur.");
+  if (message) {
+    throw new Error(message);
   }
 
-  if (status === 401) {
-    throw new Error("Email ou mot de passe incorrect.");
-  }
-
-  throw new Error("Erreur de connexion serveur");
+  throw new Error(
+    "Erreur de connexion serveur"
+  );
   }
   },
 
@@ -182,9 +184,38 @@ return {
       return { success: true };
     }
     
-    await api.post('/auth/change-password', {  ancienMotDePasse: currentPassword,
-  nouveauMotDePasse: newPassword });
-    return { success: true };
+    try {
+
+  await api.post('/auth/change-password', {
+    ancienMotDePasse: currentPassword,
+    nouveauMotDePasse: newPassword
+  });
+
+  return { success: true };
+
+} catch (error) {
+
+  const status = error.response?.status;
+
+  const message =
+    error.response?.data?.message;
+
+  if (status === 401) {
+    throw new Error(
+      message || 'Mot de passe actuel incorrect'
+    );
+  }
+
+  if (status === 400) {
+    throw new Error(
+      message || 'Requête invalide'
+    );
+  }
+
+  throw new Error(
+    message || 'Erreur serveur'
+  );
+}
   },
 
   // Récupérer l'utilisateur connecté
@@ -228,8 +259,7 @@ return {
       throw new Error("Refresh token absent");
     }
 
-    const response = await api.post(
-      '/auth/refresh',
+    const response = await api.post('/auth/refresh',
       {
         refreshToken
       }
@@ -264,11 +294,37 @@ return {
 },
 
   // Déconnexion
-  logout() {
-  clearAuth();
-   window.location.href = '/login';
-},
+  async logout() {
 
+  try {
+
+    const refreshToken = getRefreshToken();
+
+    if (refreshToken) {
+
+      await api.post(
+        '/auth/logout',
+        {
+          refreshToken
+        }
+      );
+    }
+
+  } catch (error) {
+
+    console.error(
+      'Erreur logout:',
+      error
+    );
+
+  } finally {
+
+    // nettoyage local même si backend échoue
+    clearAuth();
+
+    window.location.href = '/login';
+  }
+}
 
 
 

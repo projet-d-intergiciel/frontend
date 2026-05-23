@@ -132,32 +132,11 @@ const Login = () => {
         <div className="text-center mt-4">
           <button
             type="button"
-            onClick={() => alert('Fonctionnalité à venir : réinitialisation par email')}
+            onClick={() => navigate('/forgot-password')}  
             className="text-sm text-[#0F4C81] hover:text-[#0a3a61] transition-colors"
           >
             Mot de passe oublié ?
           </button>
-        </div>
-
-        {/* Comptes de test */}
-        <div className="mt-6 pt-4 border-t border-gray-200">
-          <p className="text-xs text-gray-500 mb-2">
-            🧪 Comptes de test :
-          </p>
-          <div className="space-y-1 text-xs">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">admin@stock.com</span>
-              <span className="text-gray-400">/</span>
-              <span className="text-gray-600">admin123</span>
-              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-[10px] font-semibold">ADMIN</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">gest@stock.com</span>
-              <span className="text-gray-400">/</span>
-              <span className="text-gray-600">gest123</span>
-              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-semibold">GESTIONNAIRE</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

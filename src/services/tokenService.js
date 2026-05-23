@@ -2,7 +2,7 @@
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 const USER_KEY = 'user';
-const REMEMBER_ME_KEY = 'remember_me';
+const REMEMBER_ME_KEY = 'rememberMe';
 
 
 // Choisit le bon storage
@@ -26,9 +26,6 @@ export const saveTokens = (
   refreshToken,
   rememberMe = false
 ) => {
-
-  // Nettoyer ancien stockage
-  clearAuth();
 
   const storage =
     rememberMe
@@ -67,15 +64,17 @@ export const saveTokens = (
 
 export const getAccessToken = () => {
 
-  return getStorage().getItem(
-    ACCESS_TOKEN_KEY
+ return (
+    localStorage.getItem(ACCESS_TOKEN_KEY) ||
+    sessionStorage.getItem(ACCESS_TOKEN_KEY)
   );
 };
 
 export const getRefreshToken = () => {
 
-  return getStorage().getItem(
-    REFRESH_TOKEN_KEY
+   return (
+    localStorage.getItem(REFRESH_TOKEN_KEY) ||
+    sessionStorage.getItem(REFRESH_TOKEN_KEY)
   );
 };
 

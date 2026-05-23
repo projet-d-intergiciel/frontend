@@ -13,8 +13,10 @@ import PrivateRoute from './guards/PrivateRoute';
 import RoleGuard from './guards/RoleGuard';
 import ProfilePage from './pages/Profile/ProfilePage';
 import ChangePasswordPage from './pages/Security/ChangePasswordPage';
+import ForgotPasswordPage from './pages/Security/ForgotPasswordPage';
+import ResetPasswordPage from './pages/Security/ResetPasswordPage';
 import ProductCatalog from './components/products/ProductCatalog';
-import NotificationsPage from './pages/Notifications/NotificationsPage'; // ← AJOUT
+import NotificationsPage from './pages/Notifications/NotificationsPage'; 
 
 function App() {
   return (
@@ -25,6 +27,14 @@ function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           {/* Page Login (sans Layout) */}
           <Route path="/login" element={<Login />} />
+
+          {/* forgot password  */}
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+
+          {/* reset password */}
+          <Route path="/reset-password" element={<ResetPasswordPage />}/>
+
 
           {/* Dashboard */}
           <Route path="/dashboard" element={
@@ -46,7 +56,7 @@ function App() {
               <Layout><ChangePasswordPage /></Layout>
             </PrivateRoute>
           } />
-
+        
           {/* Notifications ← NOUVEAU */}
           <Route path="/notifications" element={
             <PrivateRoute>
