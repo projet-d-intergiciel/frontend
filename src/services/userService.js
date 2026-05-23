@@ -173,9 +173,9 @@ export const userService = {
 
   // Réinitialiser le mot de passe et renvoyer les identifiants
   resetPasswordAndNotify: async (id) => {
-    const newTemporaryPassword = generateTemporaryPassword();
     
     if (USE_MOCK) {
+      const newTemporaryPassword = generateTemporaryPassword();
       await new Promise(resolve => setTimeout(resolve, 600));
       
       const user = MOCK_USERS.find(u => u.id === parseInt(id));

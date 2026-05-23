@@ -136,11 +136,8 @@ const UsersPage = () => {
     try {
       const result = await userService.createUser(userData);
       await loadUsers();
-      alert(`✅ Utilisateur créé avec succès !\n\nUn email contenant le mot de passe temporaire a été envoyé à ${userData.email}`);
+      alert(` Utilisateur créé avec succès !\n\nUn email contenant le mot de passe temporaire a été envoyé à ${userData.email}`);
       
-      if (result.temporaryPassword) {
-        console.log(` Mot de passe temporaire pour ${userData.email}: ${result.temporaryPassword}`);
-      }
     } catch (error) {
       console.error('Erreur création:', error);
       alert('Erreur lors de la création de l\'utilisateur');
@@ -200,12 +197,8 @@ const UsersPage = () => {
     try {
       const result = await userService.resetPasswordAndNotify(user.id);
       alert(`✅ Un email avec un nouveau mot de passe temporaire a été envoyé à ${user.email}`);
-      if (result.temporaryPassword) {
-        console.log(` Nouveau mot de passe temporaire pour ${user.email}: ${result.temporaryPassword}`);
-      }
     } catch (error) {
       console.error('Erreur réinitialisation:', error);
-      alert('Erreur lors de la réinitialisation du mot de passe');
     }
   };
 
