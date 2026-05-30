@@ -1,42 +1,55 @@
 // src/services/notificationService.js
-import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+import { api, USE_MOCK } from './api';
 
-const notificationService = {
+// Données mock (optionnel)
+let mockNotifications = [];
+
+export const notificationService = {
+
   /**
-   * Récupérer toutes les notifications de l'utilisateur connecté
+   * Récupérer toutes les notifications
    */
   getAll: async () => {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_BASE_URL}/notifications`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (USE_MOCK) {
+      return Promise.resolve(mockNotifications);
+    }
+
+    const response = await api.get('/notifications');
     return response.data;
   },
 
   /**
-   * Récupérer uniquement le nombre de notifications non lues
+   * Nombre de notifications non lues
    */
   getUnreadCount: async () => {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_BASE_URL}/notifications/unread/count`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    // Accepter { count: N } ou directement N
-    return typeof response.data === 'number' ? response.data : response.data.count ?? 0;
+    if (USE_MOCK) {
+      const count = mockNotifications.filter(n => !n.read).length;
+      return Promise.resolve(count);
+    }
+
+    const response = await api.get('/notifications/unread/count');
+
+    return typeof response.data === 'number'
+      ? response.data
+      : response.data.count ?? 0;
   },
 
   /**
-   * Marquer une notification spécifique comme lue
+   * Marquer une notification comme lue
    */
   markAsRead: async (id) => {
-    const token = localStorage.getItem('token');
-    const response = await axios.patch(
-      `${API_BASE_URL}/notifications/${id}/read`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    if (USE_MOCK) {
+      const notification = mockNotifications.find(n => n.id === id);
+
+      if (notification) {
+        notification.read = true;
+      }
+
+      return Promise.resolve(notification);
+    }
+
+    const response = await api.patch(`/notifications/${id}/read`);
     return response.data;
   },
 
@@ -44,12 +57,16 @@ const notificationService = {
    * Marquer toutes les notifications comme lues
    */
   markAllAsRead: async () => {
-    const token = localStorage.getItem('token');
-    const response = await axios.patch(
-      `${API_BASE_URL}/notifications/read-all`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    if (USE_MOCK) {
+      mockNotifications = mockNotifications.map(notification => ({
+        ...notification,
+        read: true
+      }));
+
+      return Promise.resolve(true);
+    }
+
+    const response = await api.patch('/notifications/read-all');
     return response.data;
   },
 
@@ -57,12 +74,17 @@ const notificationService = {
    * Supprimer une notification
    */
   delete: async (id) => {
-    const token = localStorage.getItem('token');
-    const response = await axios.delete(`${API_BASE_URL}/notifications/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (USE_MOCK) {
+      mockNotifications = mockNotifications.filter(
+        notification => notification.id !== id
+      );
+
+      return Promise.resolve(true);
+    }
+
+    const response = await api.delete(`/notifications/${id}`);
     return response.data;
-  },
+  }
 };
 
 export default notificationService;
